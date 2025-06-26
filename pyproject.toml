@@ -11,6 +11,7 @@ dependencies = [
 
 [dependency-groups]
 dev = [
+    "black>=25.1.0",
     "pytest>=8.4.1",
 ]
 lint = [
@@ -22,3 +23,6 @@ name = "testpypi"
 url = "https://test.pypi.org/simple/"
 publish-url = "https://test.pypi.org/legacy/"
 explicit = true
+
+[tool.setuptools]
+packages = ["generative_content_pipeline"]
