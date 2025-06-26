@@ -2,12 +2,16 @@ name: Test
 
 on:
   pull_request:
+    branches: 
+      - master
+    types: [closed]
   push:
     branches:
-      - main
+      - master
 
 jobs:
   lint:
+    if: ${{ github.event.pull_request.merged }}
     name: Lint
     runs-on: ubuntu-latest
     steps:
@@ -16,7 +20,6 @@ jobs:
         uses: astral-sh/setup-uv@v5
         with:
           enable-cache: true
-          cache-local-path: "/path/to/cache"
       - name: Ruff lint
         run: uv run --group lint ruff check .
       - name: Ruff format
@@ -25,6 +28,7 @@ jobs:
       - name: Prettier format
         run: npx prettier --prose-wrap always --check "**/*.md"
   test:
+    if: ${{ github.event.pull_request.merged }}
     name: Run tests
     strategy:
       matrix:

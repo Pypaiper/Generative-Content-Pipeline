@@ -22,7 +22,6 @@ jobs:
         uses: astral-sh/setup-uv@v5
         with:
           enable-cache: true
-          cache-local-path: "/path/to/cache"
       - run: uv build
       - run: uv publish --trusted-publishing always
 
