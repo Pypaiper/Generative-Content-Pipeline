@@ -1,0 +1,24 @@
+[project]
+name = "generative-content-pipeline"
+version = "0.1.1"
+description = "Add your description here"
+readme = "README.md"
+requires-python = ">=3.12"
+dependencies = [
+    "npx>=0.1.6",
+    "prettier>=0.0.7",
+]
+
+[dependency-groups]
+dev = [
+    "pytest>=8.4.1",
+]
+lint = [
+    "ruff>=0.12.0",
+]
+
+[[tool.uv.index]]
+name = "testpypi"
+url = "https://test.pypi.org/simple/"
+publish-url = "https://test.pypi.org/legacy/"
+explicit = true
