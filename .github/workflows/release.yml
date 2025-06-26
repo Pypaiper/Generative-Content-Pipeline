@@ -1,13 +1,15 @@
 name: CI/CD Pipeline
 
 on:
-  push:
-    branches:
-      - master  # Or main, depending on your default branch name
+  pull_request:
+    branches: 
+      - master
+    types: [closed]
 
 jobs:
 
   pypi:
+    if: ${{ github.event.pull_request.merged }}
     name: Publish to PyPI
     runs-on: ubuntu-latest
     # Environment and permissions trusted publishing.
@@ -22,7 +24,6 @@ jobs:
         uses: astral-sh/setup-uv@v5
         with:
           enable-cache: true
-          cache-local-path: "/path/to/cache"
       - run: uv build
       - run: uv publish --trusted-publishing always
 
