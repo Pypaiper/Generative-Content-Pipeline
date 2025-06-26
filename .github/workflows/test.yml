@@ -6,7 +6,6 @@ on:
 
 jobs:
   lint:
-    if: ${{ github.event.pull_request.merged }}
     name: Lint
     runs-on: ubuntu-latest
     steps:
@@ -23,7 +22,6 @@ jobs:
       - name: Prettier format
         run: npx prettier --prose-wrap always --check "**/*.md"
   test:
-    if: ${{ github.event.pull_request.merged }}
     name: Run tests
     strategy:
       matrix:
