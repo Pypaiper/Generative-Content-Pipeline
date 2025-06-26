@@ -1,9 +1,10 @@
 name: CI/CD Pipeline
 
 on:
-  push:
-    branches:
-      - master  # Or main, depending on your default branch name
+  pull_request:
+    branches: 
+      - master
+    types: [closed]
 
 jobs:
 
