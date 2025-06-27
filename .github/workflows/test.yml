@@ -3,6 +3,8 @@ name: Test
 on:
 
   push:
+    branches-ignore:
+      - master  # Excludes the master branch
   pull_request:
     branches: 
       - master
