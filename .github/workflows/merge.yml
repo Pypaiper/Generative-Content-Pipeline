@@ -1,4 +1,4 @@
-name: CI/CD Pipeline
+name: Merge
 
 on:
   pull_request:
