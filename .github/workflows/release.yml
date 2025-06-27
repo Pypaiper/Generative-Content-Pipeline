@@ -40,6 +40,7 @@ jobs:
     environment:
       # Create this environment in the GitHub repository under Settings -> Environments
       name: release
+
     steps:
       - name: Check out the repo
         uses: actions/checkout@v4
