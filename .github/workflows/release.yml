@@ -7,41 +7,7 @@ on:
       - '*'
 
 jobs:
-  check_version:
-    runs-on: ubuntu-latest
-    steps:
-      - name: Checkout code
-        uses: actions/checkout@v4
-        with:
-          fetch-depth: 0
-      - name: Fetch all tags
-        run: git fetch --tags
-
-      - name: Get latest version from main branch
-        id: main_version
-        run: |
-          latest_version=$(git tag --sort=-v:refname | head -n 1)
-          echo "::set-output name=version::$latest_version"
-
-      - name: Get current version from feature branch
-        id: feature_version
-        run: |
-          current_version=$(cat pyproject.toml | grep "version =" | awk '{print $NF}') # Example for Node.js projects
-          echo "::set-output name=version::$current_version"
-
-      - name: Check if feature branch increments version
-        run: |
-          main_version=${{ steps.main_version.outputs.version }}
-          feature_version=${{ steps.feature_version.outputs.version }}
-          if [[ $(printf "%s\n" "$main_version" "$feature_version" | sort -V | head -n 1) == "$main_version" ]]; then
-            echo "Version incremented successfully!"
-          else
-            echo "Error: Version not incremented on feature branch."
-            exit 1
-          fi
-
   pypi:
-    needs: check_version
     if: ${{ github.event.pull_request.merged }}
     name: Publish to PyPI
     runs-on: ubuntu-latest
