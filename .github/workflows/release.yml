@@ -16,8 +16,6 @@ jobs:
     environment:
       # Create this environment in the GitHub repository under Settings -> Environments
       name: release
-    env:
-      UV_PUBLISH_TOKEN: ${{ secrets.UV_PUBLISH_TOKEN }}
     permissions:
       id-token: write
     steps:
@@ -27,8 +25,7 @@ jobs:
         with:
           enable-cache: true
       - run: uv build
-      - run: uv publish --trusted-publishing always
-
+      - run: uv publish --trusted-publishing always -t ${{ secrets.UV_PUBLISH_TOKEN }}
   push_to_registry:
     name: Push Docker image to Docker Hub
     runs-on: ubuntu-latest
