@@ -1,10 +1,10 @@
 name: CI/CD Pipeline
 
 on:
-  pull_request:
-    branches: 
-      - master
-    types: [opened]
+  push:
+    # Pattern matched against refs/tags
+    tags:        
+      - '*'
 
 jobs:
   check_version:
@@ -12,7 +12,10 @@ jobs:
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
-
+        with:
+          fetch-depth: 0
+      - name: Fetch all tags
+        run: git fetch --tags
       - name: Get latest version from main branch
         id: main_version
         run: |
