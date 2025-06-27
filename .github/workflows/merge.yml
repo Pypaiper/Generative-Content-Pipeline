@@ -32,7 +32,7 @@ jobs:
         run: |
           main_version=${{ steps.main_version.outputs.version }}
           feature_version=v${{ steps.feature_version.outputs.version }}
-          if [[ $(printf "%s\n" "$main_version" "$feature_version" | sort -V | head -n 1) == "$main_version" ]]; then
+          if [[ $(printf "%s\n" "$main_version" "$feature_version" | sort -V | head -n 1) == "$main_version" ]] && [[ $(printf "%s\n" "$main_version" "$feature_version" | sort -V | head -n 1) != "$feature_version" ]]; then
             echo "Version incremented successfully!"
           else
             echo "Error: Version not incremented on feature branch."
