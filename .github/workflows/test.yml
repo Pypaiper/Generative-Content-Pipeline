@@ -6,7 +6,6 @@ on:
   pull_request:
     branches: 
       - master
-    types: [opened, reopened, synchronize]
 jobs:
   check_version:
     runs-on: ubuntu-latest
