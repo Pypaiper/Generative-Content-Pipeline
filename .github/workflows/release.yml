@@ -1,4 +1,4 @@
-name: CI/CD Pipeline
+name: Release
 
 on:
   push:
@@ -8,7 +8,6 @@ on:
 
 jobs:
   pypi:
-    if: ${{ github.event.pull_request.merged }}
     name: Publish to PyPI
     runs-on: ubuntu-latest
     # Environment and permissions trusted publishing.
