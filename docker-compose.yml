@@ -1,5 +1,8 @@
 version: '3.8'
-
+networks:
+  app-network:
+volumes:
+  postgres_data:
 services:
   localstack:
     image: localstack/localstack
