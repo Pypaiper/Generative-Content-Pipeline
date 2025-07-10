@@ -5,9 +5,9 @@ from sqlalchemy.orm import Mapped
 from sqlalchemy.orm import mapped_column
 
 
-
 class Base(AsyncAttrs, DeclarativeBase):
     pass
+
 
 class Text(Base):
     __tablename__ = "text"
