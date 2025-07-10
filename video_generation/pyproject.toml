@@ -1,0 +1,6 @@
+[project]
+name = "video-generation"
+version = "0.1.0"
+description = "Module which provides logic to deploy videos from our storage to Youtube"
+readme = "README.md"
+dependencies = []

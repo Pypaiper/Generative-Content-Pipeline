@@ -1,0 +1,13 @@
+[project]
+name = "scraping"
+version = "0.1.0"
+description = "Module which provides scraping logic and stores data in the chosen infrastructure"
+readme = "README.md"
+dependencies = [
+    "boto3",
+    "sqlalchemy",
+    "pydantic",
+    "pydantic-settings",
+    "asyncpg",
+    "psycopg2"
+]
