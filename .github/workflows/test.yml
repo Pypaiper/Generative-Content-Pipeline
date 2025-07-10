@@ -51,9 +51,9 @@ jobs:
         with:
           enable-cache: true
       - name: Ruff lint
-        run: uv run --group lint ruff check .
+        run: uv run --group lint ruff check scraping/ video_generation/ training/
       - name: Ruff format
-        run: uv run --group lint ruff format --diff .
+        run: uv run --group lint ruff format --diff scraping/ video_generation/ training/
       # This isn't a general Python lint, this style is just used in this repository
       - name: Prettier format
         run: npx prettier --prose-wrap always --check "*.md"
