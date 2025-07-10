@@ -56,6 +56,7 @@ def connection_url() -> URL:
 
     return url
 
+
 def save_file_to_s3(bucket_name, object_key, key):
     """
     Saves content to an S3 object in LocalStack.
@@ -66,12 +67,14 @@ def save_file_to_s3(bucket_name, object_key, key):
             s3_client.head_bucket(Bucket=bucket_name)
             logger.info(f"Bucket '{bucket_name}' already exists.")
         except ClientError as e:
-            if e.response['Error']['Code'] == '404':
+            if e.response["Error"]["Code"] == "404":
                 logger.info(f"Bucket '{bucket_name}' does not exist. Creating...")
-                s3_client.create_bucket(Bucket=bucket_name, CreateBucketConfiguration={
-                    'LocationConstraint': SETTINGS.S3_REGION,
-
-                })
+                s3_client.create_bucket(
+                    Bucket=bucket_name,
+                    CreateBucketConfiguration={
+                        "LocationConstraint": SETTINGS.S3_REGION,
+                    },
+                )
                 logger.info(f"Bucket '{bucket_name}' created successfully.")
             else:
                 raise
@@ -85,6 +88,7 @@ def save_file_to_s3(bucket_name, object_key, key):
     except Exception as e:
         logger.error(f"An unexpected error occurred: {e}")
 
+
 def download_file_from_s3(bucket_name, object_key, file):
     """
     Downloads content from an S3 object in LocalStack to local file.
@@ -95,12 +99,14 @@ def download_file_from_s3(bucket_name, object_key, file):
             s3_client.head_bucket(Bucket=bucket_name)
             logger.info(f"Bucket '{bucket_name}' already exists.")
         except ClientError as e:
-            if e.response['Error']['Code'] == '404':
+            if e.response["Error"]["Code"] == "404":
                 logger.info(f"Bucket '{bucket_name}' does not exist. Creating...")
-                s3_client.create_bucket(Bucket=bucket_name, CreateBucketConfiguration={
-                    'LocationConstraint': SETTINGS.S3_REGION,
-
-                })
+                s3_client.create_bucket(
+                    Bucket=bucket_name,
+                    CreateBucketConfiguration={
+                        "LocationConstraint": SETTINGS.S3_REGION,
+                    },
+                )
                 logger.info(f"Bucket '{bucket_name}' created successfully.")
             else:
                 raise
@@ -122,9 +128,10 @@ def get_css(classes, selectors):
     all_css = dict()
     for _class in classes:
         for selector, sel_css in selectors.items():
-            if selector.startswith("table") and "."+_class in selector:
+            if selector.startswith("table") and "." + _class in selector:
                 all_css.update(sel_css)
     return all_css
+
 
 def download_and_extract_zip(url, extract_path="."):
     """
@@ -144,7 +151,7 @@ def download_and_extract_zip(url, extract_path="."):
         zip_file_in_memory = BytesIO(response.content)
 
         # Open the ZIP file from memory
-        with zipfile.ZipFile(zip_file_in_memory, 'r') as zf:
+        with zipfile.ZipFile(zip_file_in_memory, "r") as zf:
             # Extract all contents to the specified path
             zf.extractall(extract_path)
         logger.info(f"ZIP file downloaded from {url} and extracted to {extract_path}")
@@ -157,7 +164,6 @@ def download_and_extract_zip(url, extract_path="."):
         logger.error(f"An unexpected error occurred: {e}")
 
 
-
 engine = create_async_engine(connection_url(), echo=False)
 
 async_session = async_sessionmaker(engine, expire_on_commit=False)
@@ -168,4 +174,3 @@ s3_client = boto3.client(
     aws_access_key_id=SETTINGS.AWS_ACCESS_KEY_ID,
     aws_secret_access_key=SETTINGS.AWS_SECRET_ACCESS_KEY,
 )
-
