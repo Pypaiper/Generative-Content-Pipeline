@@ -20,9 +20,9 @@ def aws_kms_secret(secret_name: str, region_name: str) -> str:
     return str(client.get_secret_value(SecretId=secret_name)["SecretString"])
 
 
-def connection_url() -> URL:
+def connection_url(asyncronous=True) -> URL:
     if SETTINGS.DB_HOST == "":
-        return URL.create("sqlite+aiosqlite")
+        return URL.create("sqlite+aiosqlite" if asyncronous else "sqlite")
 
     msg_source = ""
     if SETTINGS.DB_PASSWORD is not None:
@@ -41,7 +41,7 @@ def connection_url() -> URL:
         password = secret["password"]
 
     url = URL.create(
-        "postgresql+asyncpg",
+        "postgresql+asyncpg" if asyncronous else "postgresql",
         username=username,
         password=password,
         host=SETTINGS.DB_HOST,
@@ -116,7 +116,7 @@ def download_file_from_s3(bucket_name, object_key, file):
         logger.info(f"Successfully downloaded '{object_key}' to file '{file}'.")
 
     except ClientError as e:
-        logger.error(f"Error saving to S3: {e}")
+        logger.error(f"Error downloading to S3: {e}")
     except Exception as e:
         logger.error(f"An unexpected error occurred: {e}")
 
@@ -164,7 +164,7 @@ def download_and_extract_zip(url, extract_path="."):
         logger.error(f"An unexpected error occurred: {e}")
 
 
-engine = create_async_engine(connection_url(), echo=False)
+engine = create_async_engine(connection_url(asyncronous=True), echo=False)
 
 async_session = async_sessionmaker(engine, expire_on_commit=False)
 
