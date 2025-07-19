@@ -4,6 +4,7 @@ version = "0.1.0"
 description = "Module which provides logic to train various models with data in the chosen infrastructure"
 readme = "README.md"
 requires-python = ">=3.12"
+<<<<<<< HEAD
 dependencies = [
     "torch<2.3; sys_platform == 'darwin' and platform_machine == 'x86_64'",
     "torch; sys_platform != 'darwin' or platform_machine != 'x86_64'",
@@ -30,3 +31,6 @@ explicit = true
 name = "pytorch-cu126"
 url = "https://download.pytorch.org/whl/cu126"
 explicit = true
+=======
+dependencies = []
+>>>>>>> master
