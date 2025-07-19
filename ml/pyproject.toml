@@ -1,5 +1,5 @@
 [project]
-name = "training"
+name = "ml"
 version = "0.1.0"
 description = "Module which provides logic to train various models with data in the chosen infrastructure"
 readme = "README.md"
