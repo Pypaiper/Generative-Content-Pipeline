@@ -1,6 +1,4 @@
-import torch
-from torch.utils.data import Dataset, DataLoader
-from sqlalchemy import select, func
+from torch.utils.data import Dataset
 from sqlalchemy import create_engine
 from sqlalchemy.orm import sessionmaker
 from PIL import Image
@@ -8,7 +6,7 @@ import os
 
 
 from scraping.data import connection_url, download_file_from_s3
-from scraping.tables import Text, Base
+from scraping.tables import Text
 from scraping.settings import SETTINGS
 
 
