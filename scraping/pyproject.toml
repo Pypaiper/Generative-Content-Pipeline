@@ -9,10 +9,6 @@ dependencies = [
     "pydantic",
     "pydantic-settings",
     "asyncpg",
-<<<<<<< HEAD
     "psycopg2",
     "aiosqlite"
-=======
-    "psycopg2"
->>>>>>> master
 ]
