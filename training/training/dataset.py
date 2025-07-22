@@ -8,7 +8,7 @@ import os
 from scraping.data import connection_url, download_file_from_s3
 from scraping.tables import Text
 from scraping.settings import SETTINGS
-from scraping.settings import 
+
 
 class CustomTextDataset(Dataset):
     def __init__(self):
