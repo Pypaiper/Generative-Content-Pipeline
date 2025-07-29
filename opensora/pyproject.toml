@@ -5,7 +5,7 @@ description = "Module which provides logic to train various models with data in 
 readme = "README.md"
 requires-python = ">=3.10"
 dependencies = [
-  "torch==2.4.0",
+  "pytorch==2.4.0",
   "torchvision==0.19.0",
   "colossalai",
   "mmengine>=0.10.3",
