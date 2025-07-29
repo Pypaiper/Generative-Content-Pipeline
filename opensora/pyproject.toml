@@ -7,7 +7,7 @@ requires-python = ">=3.10"
 dependencies = [
   "torch==2.4.0",
   "torchvision==0.19.0",
-  "colossalai>=0.4.4",
+  "colossalai",
   "mmengine>=0.10.3",
   "ftfy>=6.2.0", # for t5
   "accelerate>=0.29.2", # for t5
@@ -26,6 +26,9 @@ dependencies = [
   "opencv-python-headless>=4.12.0.88",
   "tensornvme",
 ]
+
+[tool.pyproject2conda.dependencies]
+colossalai = { pip = true }
 
 [tool.uv.sources]
 torch = [
