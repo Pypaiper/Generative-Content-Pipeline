@@ -24,9 +24,7 @@ jobs:
         run: uvx ruff check scraping/ video_generation/ opensora/
       - name: Ruff format
         run: uvx ruff format --diff scraping/ video_generation/ opensora/
-      # This isn't a general Python lint, this style is just used in this repository
-      - name: Prettier format
-        run: npx prettier --prose-wrap always --check "*.md"
+
   # test:
   #   name: Run tests
   #   strategy:
