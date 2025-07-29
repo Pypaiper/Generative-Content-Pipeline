@@ -1,38 +1,36 @@
-networks:
-  app-network:
-volumes:
-  postgres_data:
-services:
-  localstack:
-    image: localstack/localstack
-    ports:
-      - "4566:4566"
-      - "4510-4559:4510-4559"
-  db:
-    image: postgres:14
-    ports:
-      - "5432:5432"
-    environment:
-      - POSTGRES_USER=postgres
-      - POSTGRES_PASSWORD=postgres
-      - POSTGRES_DB=books-db
-    volumes:
-      - postgres_data:/var/lib/postgresql/data
-    networks:
-      - app-network
 
-  opensearch:
-    image: opensearchproject/opensearch:2.19.0
+# starts 4 docker containers running minio server instances.
+# using nginx reverse proxy, load balancing, you can access
+# it through port 9000.
+services:
+
+  code:
+    build:
+      context: .
+    container_name: code
     environment:
-      - discovery.type=single-node
-      - plugins.security.disabled=true
-      - bootstrap.memory_lock=true
-      - OPENSEARCH_JAVA_OPTS=-Xms512m -Xmx512m
-      - OPENSEARCH_INITIAL_ADMIN_PASSWORD=OpenSearch123$
-      - OPENSEARCH_USERNAME=admin
-      - OPENSEARCH_PASSWORD=OpenSearch123$
-    networks:
-      - app-network
+      - PUID=1000
+      - PGID=1000
+      - TZ=Etc/UTC
+      - DOCKER_USER=$USER
+      - SUDO_PASSWORD=password
+      - NVIDIA_VISIBLE_DEVICES=0
+      - NVIDIA_DRIVER_CAPABILITIES=all
+      - DEFAULT_WORKSPACE=/config/workspace
+      - VIRTUAL_ENV=/opt/venv
+      - PORT=28080
+      #- CUDA_VISIBLE_DEVICES=0
+    restart: "always"
+    shm_size: 6gb
+    deploy:
+      resources:
+        reservations:
+          devices:
+            - driver: nvidia
+              count: 1
+              capabilities: [gpu]
+    volumes:
+      - .:/config/workspace
+      - ${HOME}/.ssh/:/.ssh
     ports:
-      - "9200:9200"
-      - "9600:9600"
+      - 28080:28080

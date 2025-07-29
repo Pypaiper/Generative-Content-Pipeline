@@ -8,6 +8,8 @@
 2. Install dependencies: `uv sync --all-packages`
 3. Install packages: `uv build --all`
 
-## Run in local environment
+## Developement in local environment
 
-1. `uv run python` or `uv run jupyter lab`
+1. Start docker: `docker compose up`
+2. Get password: `docker compose exec  -it code cat /root/.config/code-server/config.yaml`
+3. Login at `127.0.0.1:28080`
