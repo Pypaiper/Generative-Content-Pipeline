@@ -3,35 +3,8 @@
 # using nginx reverse proxy, load balancing, you can access
 # it through port 9000.
 services:
-  ts-coder:
-    image: tailscale/tailscale:latest
-    container_name: ts-coder
-    hostname: code
-    environment:
-      - TS_AUTHKEY=$TS_OAUTH_code
-      - "TS_EXTRA_ARGS=--advertise-tags=tag:container --reset"
-      - TS_STATE_DIR=/var/lib/tailscale
-      - TS_USERSPACE=false
-      - TS_SERVE_CONFIG=/config/code.json
-    volumes:
-      - ./ts-code/state:/var/lib/tailscale
-      - ./ts-code/config:/config
-    devices:
-      - /dev/net/tun:/dev/net/tun
-    cap_add:
-      - net_admin
-      - sys_module
-    restart: "always"
 
-    dns:
-    - 100.100.100.100
-    - 8.8.8.8
-    - 1.1.1.1
-
-    dns_search:
-    - bengal-galaxy.ts.net
   code:
-    #image: lscr.io/linuxserver/code-server:latest
     build:
       context: .
     container_name: code
@@ -41,17 +14,13 @@ services:
       - TZ=Etc/UTC
       - DOCKER_USER=$USER
       - SUDO_PASSWORD=password
-      - PROXY_DOMAIN=bengal-galaxy.ts.net #optional
       - NVIDIA_VISIBLE_DEVICES=0
       - NVIDIA_DRIVER_CAPABILITIES=all
-      - DEFAULT_WORKSPACE=/config/workspace/Generative-Content-Pipeline
+      - DEFAULT_WORKSPACE=/config/workspace
       - VIRTUAL_ENV=/opt/venv
+      - PORT=28080
       #- CUDA_VISIBLE_DEVICES=0
-    # depends_on:
-    #   - mysql
-    #   - minio
     restart: "always"
-    network_mode: service:ts-coder
     shm_size: 6gb
     deploy:
       resources:
@@ -63,4 +32,5 @@ services:
     volumes:
       - .:/config/workspace
       - ${HOME}/.ssh/:/.ssh
-
+    ports:
+      - 28080:28080
