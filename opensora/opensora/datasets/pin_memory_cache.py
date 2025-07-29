@@ -19,7 +19,9 @@ class PinMemoryCache:
 
         if len(self.pre_alloc_numels) > 0 and self.force_dtype is not None:
             for n in self.pre_alloc_numels:
-                cache_tensor = torch.empty(n, dtype=self.force_dtype, device="cpu", pin_memory=True)
+                cache_tensor = torch.empty(
+                    n, dtype=self.force_dtype, device="cpu", pin_memory=True
+                )
                 with self.lock:
                     self.cache[id(cache_tensor)] = cache_tensor
 
@@ -36,8 +38,13 @@ class PinMemoryCache:
         with self.lock:
             # find free cache
             for cache_id, cache_tensor in self.cache.items():
-                if cache_id not in self.cache_to_output and cache_tensor.numel() >= tensor.numel():
-                    target_cache_tensor = cache_tensor[: tensor.numel()].view(tensor.shape)
+                if (
+                    cache_id not in self.cache_to_output
+                    and cache_tensor.numel() >= tensor.numel()
+                ):
+                    target_cache_tensor = cache_tensor[: tensor.numel()].view(
+                        tensor.shape
+                    )
                     out_id = id(target_cache_tensor)
                     self.output_to_cache[out_id] = cache_id
                     self.cache_to_output[cache_id] = out_id
@@ -46,7 +53,9 @@ class PinMemoryCache:
         # no free cache, create a new one
         dtype = self.force_dtype if self.force_dtype is not None else tensor.dtype
         cache_numel = max(tensor.numel(), self.min_cache_numel)
-        cache_tensor = torch.empty(cache_numel, dtype=dtype, device="cpu", pin_memory=True)
+        cache_tensor = torch.empty(
+            cache_numel, dtype=dtype, device="cpu", pin_memory=True
+        )
         target_cache_tensor = cache_tensor[: tensor.numel()].view(tensor.shape)
         out_id = id(target_cache_tensor)
         with self.lock:
@@ -72,5 +81,7 @@ class PinMemoryCache:
         with self.lock:
             num_cached = len(self.cache)
             num_used = len(self.output_to_cache)
-            total_cache_size = sum([v.numel() * v.element_size() for v in self.cache.values()])
+            total_cache_size = sum(
+                [v.numel() * v.element_size() for v in self.cache.values()]
+            )
         return f"PinMemoryCache(num_cached={num_cached}, num_used={num_used}, total_cache_size={total_cache_size / 1024**3:.2f} GB, hit rate={self.hit_cnt / self.total_cnt:.2f})"

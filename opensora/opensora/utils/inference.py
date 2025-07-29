@@ -40,7 +40,9 @@ def create_tmp_csv(save_dir: str, prompt: str, ref: str = None, create=True) -> 
     return tmp_file
 
 
-def modify_option_to_t2i(sampling_option, distilled: bool = False, img_resolution: str = "1080px"):
+def modify_option_to_t2i(
+    sampling_option, distilled: bool = False, img_resolution: str = "1080px"
+):
     """
     Modify the sampling option to be used for text-to-image generation.
     """
@@ -48,7 +50,9 @@ def modify_option_to_t2i(sampling_option, distilled: bool = False, img_resolutio
     if distilled:
         sampling_option_t2i.method = SamplingMethod.DISTILLED
     sampling_option_t2i.num_frames = 1
-    sampling_option_t2i.height, sampling_option_t2i.width = get_image_size(img_resolution, sampling_option.aspect_ratio)
+    sampling_option_t2i.height, sampling_option_t2i.width = get_image_size(
+        img_resolution, sampling_option.aspect_ratio
+    )
     sampling_option_t2i.guidance = 4.0
     sampling_option_t2i.resized_resolution = sampling_option.resolution
 
@@ -152,11 +156,16 @@ def process_and_save(
             if (
                 cfg.get("use_t2i2v", False)
                 and is_image
-                and generate_sampling_option.resolution != generate_sampling_option.resized_resolution
+                and generate_sampling_option.resolution
+                != generate_sampling_option.resized_resolution
             ):
-                log_message("Rescaling image to %s...", generate_sampling_option.resized_resolution)
+                log_message(
+                    "Rescaling image to %s...",
+                    generate_sampling_option.resized_resolution,
+                )
                 height, width = get_image_size(
-                    generate_sampling_option.resized_resolution, generate_sampling_option.aspect_ratio
+                    generate_sampling_option.resized_resolution,
+                    generate_sampling_option.aspect_ratio,
                 )
                 rescale_image_by_path(save_path + ".png", width, height)
 
@@ -207,7 +216,9 @@ def add_motion_score_to_text(text, motion_score: int | str):
         return [f"{t} {motion_score} motion score." for t in text]
 
 
-def add_noise_to_ref(masked_ref: torch.Tensor, masks: torch.Tensor, t: float, sigma_min: float = 1e-5):
+def add_noise_to_ref(
+    masked_ref: torch.Tensor, masks: torch.Tensor, t: float, sigma_min: float = 1e-5
+):
     z_1 = torch.randn_like(masked_ref)
     z_noisy = (1 - (1 - sigma_min) * t) * masked_ref + t * z_1
     return masks * z_noisy
@@ -231,14 +242,18 @@ def collect_references_batch(
         ref = []
 
         if "v2v" in cond_type:
-            r = read_from_path(ref_path[0], image_size, transform_name="resize_crop")  # size [C, T, H, W]
+            r = read_from_path(
+                ref_path[0], image_size, transform_name="resize_crop"
+            )  # size [C, T, H, W]
             actual_t = r.size(1)
             target_t = (
                 64 if (actual_t >= 64 and "easy" in cond_type) else 32
             )  # if reference not long enough, default to shorter ref
             if is_causal:
                 target_t += 1
-            assert actual_t >= target_t, f"need at least {target_t} reference frames for v2v generation"
+            assert actual_t >= target_t, (
+                f"need at least {target_t} reference frames for v2v generation"
+            )
             if "head" in cond_type:  # v2v head
                 r = r[:, :target_t]
             elif "tail" in cond_type:  # v2v tail
@@ -249,26 +264,34 @@ def collect_references_batch(
             r_x = r_x.squeeze(0)  # size [C, T, H, W]
             ref.append(r_x)
         elif cond_type == "i2v_head":  # take the 1st frame from first ref_path
-            r = read_from_path(ref_path[0], image_size, transform_name="resize_crop")  # size [C, T, H, W]
+            r = read_from_path(
+                ref_path[0], image_size, transform_name="resize_crop"
+            )  # size [C, T, H, W]
             r = r[:, :1]
             r_x = model_ae.encode(r.unsqueeze(0).to(device, dtype))
             r_x = r_x.squeeze(0)  # size [C, T, H, W]
             ref.append(r_x)
         elif cond_type == "i2v_tail":  # take the last frame from last ref_path
-            r = read_from_path(ref_path[-1], image_size, transform_name="resize_crop")  # size [C, T, H, W]
+            r = read_from_path(
+                ref_path[-1], image_size, transform_name="resize_crop"
+            )  # size [C, T, H, W]
             r = r[:, -1:]
             r_x = model_ae.encode(r.unsqueeze(0).to(device, dtype))
             r_x = r_x.squeeze(0)  # size [C, T, H, W]
             ref.append(r_x)
         elif cond_type == "i2v_loop":
             # first frame
-            r_head = read_from_path(ref_path[0], image_size, transform_name="resize_crop")  # size [C, T, H, W]
+            r_head = read_from_path(
+                ref_path[0], image_size, transform_name="resize_crop"
+            )  # size [C, T, H, W]
             r_head = r_head[:, :1]
             r_x_head = model_ae.encode(r_head.unsqueeze(0).to(device, dtype))
             r_x_head = r_x_head.squeeze(0)  # size [C, T, H, W]
             ref.append(r_x_head)
             # last frame
-            r_tail = read_from_path(ref_path[-1], image_size, transform_name="resize_crop")  # size [C, T, H, W]
+            r_tail = read_from_path(
+                ref_path[-1], image_size, transform_name="resize_crop"
+            )  # size [C, T, H, W]
             r_tail = r_tail[:, -1:]
             r_x_tail = model_ae.encode(r_tail.unsqueeze(0).to(device, dtype))
             r_x_tail = r_x_tail.squeeze(0)  # size [C, T, H, W]
@@ -341,7 +364,9 @@ def prepare_inference_condition(
                 masks[i, :, 0, :, :] = 1
                 masks[i, :, -1, :, :] = 1
                 masked_z[i, :, 0, :, :] = ref[0][:, 0, :, :]
-                masked_z[i, :, -1, :, :] = ref[-1][:, -1, :, :]  # last frame of last referenced content
+                masked_z[i, :, -1, :, :] = ref[-1][
+                    :, -1, :, :
+                ]  # last frame of last referenced content
             else:
                 # "t2v" is the fallback case where no specific condition is specified
                 assert mask_cond == "t2v", f"Unknown mask condition {mask_cond}"

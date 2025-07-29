@@ -47,7 +47,9 @@ def shard_channelwise(
     if isinstance(group_or_device_mesh, ProcessGroup):
         device_mesh = DeviceMesh.from_process_group(group_or_device_mesh)
     else:
-        assert len(group_or_device_mesh.shape) == 1, "Only 1D DeviceMesh is accepted for row-wise sharding."
+        assert len(group_or_device_mesh.shape) == 1, (
+            "Only 1D DeviceMesh is accepted for row-wise sharding."
+        )
         device_mesh = group_or_device_mesh
     sharding_spec = ShardingSpec(dim_size=tensor.dim(), dim_partition_dict={1: [0]})
 
@@ -76,7 +78,17 @@ class Conv3dTPCol(nn.Conv3d):
         bias_: Optional[Parameter] = None,
     ) -> None:
         super().__init__(
-            in_channels, out_channels, kernel_size, stride, padding, dilation, groups, bias, padding_mode, device, dtype
+            in_channels,
+            out_channels,
+            kernel_size,
+            stride,
+            padding,
+            dilation,
+            groups,
+            bias,
+            padding_mode,
+            device,
+            dtype,
         )
         self.tp_group = tp_group
         self.gather_output = gather_output
@@ -85,7 +97,9 @@ class Conv3dTPCol(nn.Conv3d):
 
         # sanity check
         if weight is not None:
-            assert not bias or bias_ is not None, "bias_ must be provided if bias is True when weight is not None"
+            assert not bias or bias_ is not None, (
+                "bias_ must be provided if bias is True when weight is not None"
+            )
         else:
             assert bias_ is None, "bias_ must be None if weight is None"
 
@@ -114,7 +128,9 @@ class Conv3dTPCol(nn.Conv3d):
 
     @staticmethod
     def from_native_module(
-        module: nn.Conv3d, process_group: Union[ProcessGroup, List[ProcessGroup]], **kwargs
+        module: nn.Conv3d,
+        process_group: Union[ProcessGroup, List[ProcessGroup]],
+        **kwargs,
     ) -> ParallelModule:
         r"""
         Convert a native PyTorch conv3d layer to a tensor parallelized layer.
@@ -122,7 +138,9 @@ class Conv3dTPCol(nn.Conv3d):
 
         # ensure only one process group is passed
         if isinstance(process_group, (list, tuple)):
-            assert len(process_group) == 1, f"Expected only one process group, got {len(process_group)}."
+            assert len(process_group) == 1, (
+                f"Expected only one process group, got {len(process_group)}."
+            )
             process_group = process_group[0]
 
         conv3d_tp = Conv3dTPCol(
@@ -188,7 +206,17 @@ class Conv3dTPRow(nn.Conv3d):
         bias_: Optional[Parameter] = None,
     ) -> None:
         super().__init__(
-            in_channels, out_channels, kernel_size, stride, padding, dilation, groups, bias, padding_mode, device, dtype
+            in_channels,
+            out_channels,
+            kernel_size,
+            stride,
+            padding,
+            dilation,
+            groups,
+            bias,
+            padding_mode,
+            device,
+            dtype,
         )
         self.tp_group = tp_group
         self.split_input = split_input
@@ -198,7 +226,9 @@ class Conv3dTPRow(nn.Conv3d):
 
         # sanity check
         if weight is not None:
-            assert not bias or bias_ is not None, "bias_ must be provided if bias is True when weight is not None"
+            assert not bias or bias_ is not None, (
+                "bias_ must be provided if bias is True when weight is not None"
+            )
         else:
             assert bias_ is None, "bias_ must be None if weight is None"
 
@@ -224,7 +254,9 @@ class Conv3dTPRow(nn.Conv3d):
 
     @staticmethod
     def from_native_module(
-        module: nn.Conv3d, process_group: Union[ProcessGroup, List[ProcessGroup]], **kwargs
+        module: nn.Conv3d,
+        process_group: Union[ProcessGroup, List[ProcessGroup]],
+        **kwargs,
     ) -> ParallelModule:
         r"""
         Convert a native PyTorch conv3d layer to a tensor parallelized layer.
@@ -296,7 +328,17 @@ class Conv2dTPRow(nn.Conv2d):
         bias_: Optional[Parameter] = None,
     ) -> None:
         super().__init__(
-            in_channels, out_channels, kernel_size, stride, padding, dilation, groups, bias, padding_mode, device, dtype
+            in_channels,
+            out_channels,
+            kernel_size,
+            stride,
+            padding,
+            dilation,
+            groups,
+            bias,
+            padding_mode,
+            device,
+            dtype,
         )
         self.tp_group = tp_group
         self.split_input = split_input
@@ -306,7 +348,9 @@ class Conv2dTPRow(nn.Conv2d):
 
         # sanity check
         if weight is not None:
-            assert not bias or bias_ is not None, "bias_ must be provided if bias is True when weight is not None"
+            assert not bias or bias_ is not None, (
+                "bias_ must be provided if bias is True when weight is not None"
+            )
         else:
             assert bias_ is None, "bias_ must be None if weight is None"
 
@@ -353,7 +397,9 @@ class Conv2dTPRow(nn.Conv2d):
 
     @staticmethod
     def from_native_module(
-        module: nn.Conv2d, process_group: Union[ProcessGroup, List[ProcessGroup]], **kwargs
+        module: nn.Conv2d,
+        process_group: Union[ProcessGroup, List[ProcessGroup]],
+        **kwargs,
     ) -> ParallelModule:
         r"""
         Convert a native PyTorch conv2d layer to a tensor parallelized layer.
@@ -404,7 +450,17 @@ class Conv1dTPRow(nn.Conv1d):
         bias_: Optional[Parameter] = None,
     ) -> None:
         super().__init__(
-            in_channels, out_channels, kernel_size, stride, padding, dilation, groups, bias, padding_mode, device, dtype
+            in_channels,
+            out_channels,
+            kernel_size,
+            stride,
+            padding,
+            dilation,
+            groups,
+            bias,
+            padding_mode,
+            device,
+            dtype,
         )
         self.tp_group = tp_group
         self.split_input = split_input
@@ -414,7 +470,9 @@ class Conv1dTPRow(nn.Conv1d):
 
         # sanity check
         if weight is not None:
-            assert not bias or bias_ is not None, "bias_ must be provided if bias is True when weight is not None"
+            assert not bias or bias_ is not None, (
+                "bias_ must be provided if bias is True when weight is not None"
+            )
         else:
             assert bias_ is None, "bias_ must be None if weight is None"
 
@@ -462,7 +520,9 @@ class Conv1dTPRow(nn.Conv1d):
 
     @staticmethod
     def from_native_module(
-        module: nn.Conv1d, process_group: Union[ProcessGroup, List[ProcessGroup]], **kwargs
+        module: nn.Conv1d,
+        process_group: Union[ProcessGroup, List[ProcessGroup]],
+        **kwargs,
     ) -> ParallelModule:
         r"""
         Convert a native PyTorch conv1d layer to a tensor parallelized layer.
@@ -537,7 +597,9 @@ class GroupNormTP(nn.GroupNorm):
 
     @staticmethod
     def from_native_module(
-        module: nn.GroupNorm, process_group: Union[ProcessGroup, List[ProcessGroup]], **kwargs
+        module: nn.GroupNorm,
+        process_group: Union[ProcessGroup, List[ProcessGroup]],
+        **kwargs,
     ) -> ParallelModule:
         r"""
         Convert a native PyTorch nn.GroupNorm layer to a tensor parallelized layer.

@@ -9,7 +9,7 @@ try:
     from flash_attn_interface import flash_attn_func as flash_attn_func_v3
 
     SUPPORT_FA3 = True
-except:
+except ImportError:
     SUPPORT_FA3 = False
 
 
@@ -52,7 +52,9 @@ def rope(pos: Tensor, dim: int, theta: int) -> Tuple:
     scale = torch.arange(0, dim, 2, dtype=torch.float64, device=pos.device) / dim
     omega = 1.0 / (theta**scale)
     out = torch.einsum("...n,d->...nd", pos, omega)
-    out = torch.stack([torch.cos(out), -torch.sin(out), torch.sin(out), torch.cos(out)], dim=-1)
+    out = torch.stack(
+        [torch.cos(out), -torch.sin(out), torch.sin(out), torch.cos(out)], dim=-1
+    )
     out = rearrange(out, "b n d (i j) -> b n d i j", i=2, j=2)
     return out.float()
 

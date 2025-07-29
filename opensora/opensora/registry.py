@@ -4,7 +4,9 @@ import torch.nn as nn
 from mmengine.registry import Registry
 
 
-def build_module(module: dict | nn.Module, builder: Registry, **kwargs) -> nn.Module | None:
+def build_module(
+    module: dict | nn.Module, builder: Registry, **kwargs
+) -> nn.Module | None:
     """Build module from config or return the module itself.
 
     Args:

@@ -10,7 +10,14 @@ from torchvision.datasets.folder import pil_loader
 from opensora.registry import DATASETS
 
 from .read_video import read_video
-from .utils import get_transforms_image, get_transforms_video, is_img, map_target_fps, read_file, temporal_random_crop
+from .utils import (
+    get_transforms_image,
+    get_transforms_video,
+    is_img,
+    map_target_fps,
+    read_file,
+    temporal_random_crop,
+)
 
 ImageFile.LOAD_TRUNCATED_IMAGES = True
 
@@ -50,7 +57,9 @@ class Item:
         else:
             shard_idx = index // self.rows_per_shard
             idx = index % self.rows_per_shard
-            shard_parquet = os.path.join(self.sharded_folder, self.sharded_folders[shard_idx])
+            shard_parquet = os.path.join(
+                self.sharded_folder, self.sharded_folders[shard_idx]
+            )
             try:
                 text_parquet = pd.read_parquet(shard_parquet, engine="fastparquet")
                 path = text_parquet["path"].iloc[idx]
@@ -66,7 +75,9 @@ class Item:
         ret.update(self.data.iloc[index].to_dict())
         shard_idx = index // self.rows_per_shard
         idx = index % self.rows_per_shard
-        shard_parquet = os.path.join(self.sharded_folder, self.sharded_folders[shard_idx])
+        shard_parquet = os.path.join(
+            self.sharded_folder, self.sharded_folders[shard_idx]
+        )
         try:
             text_parquet = pd.read_parquet(shard_parquet, engine="fastparquet")
             path = text_parquet["path"].iloc[idx]
@@ -84,7 +95,9 @@ class EfficientParquet:
         self.total_rows = len(df)
         self.rows_per_shard = (self.total_rows + K - 1) // K
         self.sharded_folder = sharded_folder
-        assert os.path.exists(sharded_folder), f"Sharded folder {sharded_folder} does not exist."
+        assert os.path.exists(sharded_folder), (
+            f"Sharded folder {sharded_folder} does not exist."
+        )
         self.sharded_folders = os.listdir(sharded_folder)
         self.sharded_folders = sorted(self.sharded_folders)
 
@@ -93,7 +106,9 @@ class EfficientParquet:
 
     @property
     def iloc(self):
-        return Iloc(self.data, self.sharded_folder, self.sharded_folders, self.rows_per_shard)
+        return Iloc(
+            self.data, self.sharded_folder, self.sharded_folders, self.rows_per_shard
+        )
 
 
 @DATASETS.register_module("text")
@@ -140,12 +155,18 @@ class TextDataset(torch.utils.data.Dataset):
             postfixs = []
             if new_fps != 0 and self.fps_max < 999:
                 postfixs.append(f"{new_fps} FPS")
-            if self.vmaf and "score_vmafmotion" in sample and not np.isnan(sample["score_vmafmotion"]):
+            if (
+                self.vmaf
+                and "score_vmafmotion" in sample
+                and not np.isnan(sample["score_vmafmotion"])
+            ):
                 postfixs.append(f"{int(sample['score_vmafmotion'] + 0.5)} motion score")
             postfix = " " + ", ".join(postfixs) + "." if postfixs else ""
             ret["text"] = ret["text"] + postfix
             if self.tokenize_fn is not None:
-                ret.update({k: v.squeeze(0) for k, v in self.tokenize_fn(ret["text"]).items()})
+                ret.update(
+                    {k: v.squeeze(0) for k, v in self.tokenize_fn(ret["text"]).items()}
+                )
 
         if "ref" in sample:  # i2v & v2v reference
             ret["ref"] = sample.pop("ref")
@@ -195,7 +216,14 @@ class VideoTextDataset(TextDataset):
 
         return {"video": video}
 
-    def get_video(self, index: int, num_frames: int, height: int, width: int, sampling_interval: int) -> dict:
+    def get_video(
+        self,
+        index: int,
+        num_frames: int,
+        height: int,
+        width: int,
+        sampling_interval: int,
+    ) -> dict:
         sample = self.data.iloc[index]
         path = sample["path"]
 
@@ -204,7 +232,9 @@ class VideoTextDataset(TextDataset):
 
         if self.rand_sample_interval is not None:
             # randomly sample from 1 - self.rand_sample_interval
-            video_allowed_max = min(len(vframes) // num_frames, self.rand_sample_interval)
+            video_allowed_max = min(
+                len(vframes) // num_frames, self.rand_sample_interval
+            )
             sampling_interval = random.randint(1, video_allowed_max)
 
         # Sampling video frames
@@ -222,7 +252,14 @@ class VideoTextDataset(TextDataset):
 
         return ret
 
-    def get_image_or_video(self, index: int, num_frames: int, height: int, width: int, sampling_interval: int) -> dict:
+    def get_image_or_video(
+        self,
+        index: int,
+        num_frames: int,
+        height: int,
+        width: int,
+        sampling_interval: int,
+    ) -> dict:
         sample = self.data.iloc[index]
         path = sample["path"]
 
@@ -236,7 +273,11 @@ class VideoTextDataset(TextDataset):
         ret = dict()
         ret.update(super().getitem(index))
         try:
-            ret.update(self.get_image_or_video(index, num_frames, height, width, ret["sampling_interval"]))
+            ret.update(
+                self.get_image_or_video(
+                    index, num_frames, height, width, ret["sampling_interval"]
+                )
+            )
         except Exception as e:
             path = self.data.iloc[index]["path"]
             print(f"video {path}: {e}")

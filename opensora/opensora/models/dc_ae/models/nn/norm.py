@@ -34,10 +34,13 @@ class LayerNorm2d(nn.LayerNorm):
         return out
 
 
-
 class RMSNorm2d(nn.Module):
     def __init__(
-        self, num_features: int, eps: float = 1e-5, elementwise_affine: bool = True, bias: bool = True
+        self,
+        num_features: int,
+        eps: float = 1e-5,
+        elementwise_affine: bool = True,
+        bias: bool = True,
     ) -> None:
         super().__init__()
         self.num_features = num_features
@@ -54,7 +57,9 @@ class RMSNorm2d(nn.Module):
             self.register_parameter("bias", None)
 
     def forward(self, x: torch.Tensor) -> torch.Tensor:
-        x = (x / torch.sqrt(torch.square(x.float()).mean(dim=1, keepdim=True) + self.eps)).to(x.dtype)
+        x = (
+            x / torch.sqrt(torch.square(x.float()).mean(dim=1, keepdim=True) + self.eps)
+        ).to(x.dtype)
         if self.elementwise_affine:
             x = x * self.weight.view(1, -1, 1, 1) + self.bias.view(1, -1, 1, 1)
         return x
@@ -62,7 +67,9 @@ class RMSNorm2d(nn.Module):
 
 class RMSNorm3d(RMSNorm2d):
     def forward(self, x: torch.Tensor) -> torch.Tensor:
-        x = (x / torch.sqrt(torch.square(x.float()).mean(dim=1, keepdim=True) + self.eps)).to(x.dtype)
+        x = (
+            x / torch.sqrt(torch.square(x.float()).mean(dim=1, keepdim=True) + self.eps)
+        ).to(x.dtype)
         if self.elementwise_affine:
             x = x * self.weight.view(1, -1, 1, 1, 1) + self.bias.view(1, -1, 1, 1, 1)
         return x

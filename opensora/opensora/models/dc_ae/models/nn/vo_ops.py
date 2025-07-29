@@ -93,9 +93,9 @@ def chunked_interpolate(x, scale_factor, mode="nearest"):
     Returns:
         torch.Tensor: Interpolated tensor
     """
-    assert (
-        mode == "nearest"
-    ), "Only the nearest mode is supported"  # actually other modes are theoretically supported but not tested
+    assert mode == "nearest", (
+        "Only the nearest mode is supported"
+    )  # actually other modes are theoretically supported but not tested
     if len(x.shape) != 5:
         raise ValueError("Expected 5D input tensor (B, C, D, H, W)")
 
@@ -130,7 +130,9 @@ def chunked_interpolate(x, scale_factor, mode="nearest"):
 
         chunk = x[:, start_idx:end_idx, :, :, :]
 
-        interpolated_chunk = F.interpolate(chunk, scale_factor=scale_factor, mode="nearest")
+        interpolated_chunk = F.interpolate(
+            chunk, scale_factor=scale_factor, mode="nearest"
+        )
 
         chunks.append(interpolated_chunk)
 
@@ -146,49 +148,56 @@ def test_chunked_interpolate():
     x1 = torch.randn(2, 16, 16, 32, 32).cuda()
     scale_factor = (2.0, 2.0, 2.0)
     assert torch.allclose(
-        chunked_interpolate(x1, scale_factor=scale_factor), F.interpolate(x1, scale_factor=scale_factor, mode="nearest")
+        chunked_interpolate(x1, scale_factor=scale_factor),
+        F.interpolate(x1, scale_factor=scale_factor, mode="nearest"),
     )
 
     # Test case 3: Downscaling with scale_factor
     x3 = torch.randn(2, 16, 32, 64, 64).cuda()
     scale_factor = (0.5, 0.5, 0.5)
     assert torch.allclose(
-        chunked_interpolate(x3, scale_factor=scale_factor), F.interpolate(x3, scale_factor=scale_factor, mode="nearest")
+        chunked_interpolate(x3, scale_factor=scale_factor),
+        F.interpolate(x3, scale_factor=scale_factor, mode="nearest"),
     )
 
     # Test case 4: Different scales per dimension
     x4 = torch.randn(2, 16, 16, 32, 32).cuda()
     scale_factor = (2.0, 1.5, 1.5)
     assert torch.allclose(
-        chunked_interpolate(x4, scale_factor=scale_factor), F.interpolate(x4, scale_factor=scale_factor, mode="nearest")
+        chunked_interpolate(x4, scale_factor=scale_factor),
+        F.interpolate(x4, scale_factor=scale_factor, mode="nearest"),
     )
 
     # Test case 5: Large input tensor
     x5 = torch.randn(2, 16, 64, 128, 128).cuda()
     scale_factor = (2.0, 2.0, 2.0)
     assert torch.allclose(
-        chunked_interpolate(x5, scale_factor=scale_factor), F.interpolate(x5, scale_factor=scale_factor, mode="nearest")
+        chunked_interpolate(x5, scale_factor=scale_factor),
+        F.interpolate(x5, scale_factor=scale_factor, mode="nearest"),
     )
 
     # Test case 7: Chunk size equal to input depth
     x7 = torch.randn(2, 16, 8, 32, 32).cuda()
     scale_factor = (2.0, 2.0, 2.0)
     assert torch.allclose(
-        chunked_interpolate(x7, scale_factor=scale_factor), F.interpolate(x7, scale_factor=scale_factor, mode="nearest")
+        chunked_interpolate(x7, scale_factor=scale_factor),
+        F.interpolate(x7, scale_factor=scale_factor, mode="nearest"),
     )
 
     # Test case 8: Single channel input
     x8 = torch.randn(2, 1, 16, 32, 32).cuda()
     scale_factor = (2.0, 2.0, 2.0)
     assert torch.allclose(
-        chunked_interpolate(x8, scale_factor=scale_factor), F.interpolate(x8, scale_factor=scale_factor, mode="nearest")
+        chunked_interpolate(x8, scale_factor=scale_factor),
+        F.interpolate(x8, scale_factor=scale_factor, mode="nearest"),
     )
 
     # Test case 9: Minimal batch size
     x9 = torch.randn(1, 16, 32, 64, 64).cuda()
     scale_factor = (0.5, 0.5, 0.5)
     assert torch.allclose(
-        chunked_interpolate(x9, scale_factor=scale_factor), F.interpolate(x9, scale_factor=scale_factor, mode="nearest")
+        chunked_interpolate(x9, scale_factor=scale_factor),
+        F.interpolate(x9, scale_factor=scale_factor, mode="nearest"),
     )
 
     # Test case 10: Non-power-of-2 dimensions
@@ -202,7 +211,9 @@ def test_chunked_interpolate():
     # Test case 11: large output tensor
 
 
-def get_same_padding(kernel_size: Union[int, tuple[int, ...]]) -> Union[int, tuple[int, ...]]:
+def get_same_padding(
+    kernel_size: Union[int, tuple[int, ...]],
+) -> Union[int, tuple[int, ...]]:
     if isinstance(kernel_size, tuple):
         return tuple([get_same_padding(ks) for ks in kernel_size])
     else:

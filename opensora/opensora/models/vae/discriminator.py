@@ -53,7 +53,10 @@ class NLayerDiscriminator3D(nn.Module):
 
         kw = 3
         padw = 1
-        sequence = [nn.Conv3d(input_nc, ndf, kernel_size=kw, stride=2, padding=padw), nn.LeakyReLU(0.2, True)]
+        sequence = [
+            nn.Conv3d(input_nc, ndf, kernel_size=kw, stride=2, padding=padw),
+            nn.LeakyReLU(0.2, True),
+        ]
         nf_mult = 1
         nf_mult_prev = 1
         for n in range(1, n_layers):  # gradually increase the number of filters
@@ -101,7 +104,11 @@ class NLayerDiscriminator3D(nn.Module):
 def N_LAYER_DISCRIMINATOR_3D(from_pretrained=None, force_huggingface=None, **kwargs):
     model = NLayerDiscriminator3D(**kwargs).apply(weights_init)
     if from_pretrained is not None:
-        if force_huggingface or from_pretrained is not None and not os.path.exists(from_pretrained):
+        if (
+            force_huggingface
+            or from_pretrained is not None
+            and not os.path.exists(from_pretrained)
+        ):
             raise NotImplementedError
         else:
             load_checkpoint(model, from_pretrained)

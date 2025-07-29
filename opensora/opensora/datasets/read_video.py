@@ -50,7 +50,9 @@ def read_video_av(
     # format
     output_format = output_format.upper()
     if output_format not in ("THWC", "TCHW"):
-        raise ValueError(f"output_format should be either 'THWC' or 'TCHW', got {output_format}.")
+        raise ValueError(
+            f"output_format should be either 'THWC' or 'TCHW', got {output_format}."
+        )
     # file existence
     if not os.path.exists(filename):
         raise RuntimeError(f"File not found: {filename}")
@@ -61,7 +63,9 @@ def read_video_av(
     if end_pts is None:
         end_pts = float("inf")
     if end_pts < start_pts:
-        raise ValueError(f"end_pts should be larger than start_pts, got start_pts={start_pts} and end_pts={end_pts}")
+        raise ValueError(
+            f"end_pts should be larger than start_pts, got start_pts={start_pts} and end_pts={end_pts}"
+        )
 
     # == get video info ==
     info = {}
@@ -132,7 +136,9 @@ def _read_from_stream(
         if end_offset != float("inf"):
             end_offset = int(math.ceil(end_offset * (1 / stream.time_base)))
     else:
-        warnings.warn("The pts_unit 'pts' gives wrong results. Please use pts_unit 'sec'.")
+        warnings.warn(
+            "The pts_unit 'pts' gives wrong results. Please use pts_unit 'sec'."
+        )
 
     should_buffer = True
     max_buffer_size = 5
@@ -250,7 +256,9 @@ def read_video(video_path, backend="av"):
     if backend == "cv2":
         vframes, vinfo = read_video_cv2(video_path)
     elif backend == "av":
-        vframes, _, vinfo = read_video_av(filename=video_path, pts_unit="sec", output_format="TCHW")
+        vframes, _, vinfo = read_video_av(
+            filename=video_path, pts_unit="sec", output_format="TCHW"
+        )
     else:
         raise ValueError
 

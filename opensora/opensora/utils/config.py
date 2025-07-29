@@ -78,7 +78,7 @@ def merge_args(cfg: Config, args: argparse.Namespace) -> Config:
             v = None
         elif k in target:
             v_type = type(target[k])
-            if v_type == bool:
+            if v_type is bool:
                 v = auto_convert(v)
             else:
                 v = type(target[k])(v)

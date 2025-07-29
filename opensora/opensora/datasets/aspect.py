@@ -95,9 +95,9 @@ def get_resolution_with_aspect_ratio(
         setting = ""
     else:
         resolution, setting = keys
-        assert setting == "max" or setting.startswith(
-            "ar"
-        ), f"Invalid setting {setting}"
+        assert setting == "max" or setting.startswith("ar"), (
+            f"Invalid setting {setting}"
+        )
 
     # get resolution
     num_pexels = get_num_pexels_from_name(resolution)
@@ -114,9 +114,9 @@ def get_resolution_with_aspect_ratio(
         aspect_ratio_dict = {aspect_ratio: aspect_ratio_dict[aspect_ratio]}
     elif setting.startswith("ar"):
         aspect_ratio = setting[2:]
-        assert (
-            aspect_ratio in aspect_ratio_dict
-        ), f"Aspect ratio {aspect_ratio} not found"
+        assert aspect_ratio in aspect_ratio_dict, (
+            f"Aspect ratio {aspect_ratio} not found"
+        )
         aspect_ratio_dict = {aspect_ratio: aspect_ratio_dict[aspect_ratio]}
 
     return num_pexels, aspect_ratio_dict

@@ -85,7 +85,13 @@ def get_is_saving_process(cfg: dict):
     plugin_config = cfg.get("plugin_config", {})
     is_saving_process = (
         plugin_type != "hybrid"
-        or (plugin_config["tp_size"] > 1 and dist.get_rank(get_tensor_parallel_group()) == 0)
-        or (plugin_config["sp_size"] > 1 and dist.get_rank(get_sequence_parallel_group()) == 0)
+        or (
+            plugin_config["tp_size"] > 1
+            and dist.get_rank(get_tensor_parallel_group()) == 0
+        )
+        or (
+            plugin_config["sp_size"] > 1
+            and dist.get_rank(get_sequence_parallel_group()) == 0
+        )
     )
     return is_saving_process

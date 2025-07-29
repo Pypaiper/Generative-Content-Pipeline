@@ -23,7 +23,9 @@ from torch.nn.modules.batchnorm import _BatchNorm
 __all__ = ["init_modules"]
 
 
-def init_modules(model: Union[nn.Module, list[nn.Module]], init_type="trunc_normal") -> None:
+def init_modules(
+    model: Union[nn.Module, list[nn.Module]], init_type="trunc_normal"
+) -> None:
     _DEFAULT_INIT_PARAM = {"trunc_normal": 0.02}
 
     if isinstance(model, list):
@@ -34,13 +36,27 @@ def init_modules(model: Union[nn.Module, list[nn.Module]], init_type="trunc_norm
         init_params = float(init_params[1]) if len(init_params) > 1 else None
 
         if init_type.startswith("trunc_normal"):
-            init_func = lambda param: nn.init.trunc_normal_(
-                param, std=(_DEFAULT_INIT_PARAM["trunc_normal"] if init_params is None else init_params)
-            )
+
+            def init_func(param):
+                return nn.init.trunc_normal_(
+                    param,
+                    std=(
+                        _DEFAULT_INIT_PARAM["trunc_normal"]
+                        if init_params is None
+                        else init_params
+                    ),
+                )
         elif init_type.startswith("normal"):
-            init_func = lambda param: nn.init.normal_(
-                param, std=(_DEFAULT_INIT_PARAM["trunc_normal"] if init_params is None else init_params)
-            )
+
+            def init_func(param):
+                return nn.init.normal_(
+                    param,
+                    std=(
+                        _DEFAULT_INIT_PARAM["trunc_normal"]
+                        if init_params is None
+                        else init_params
+                    ),
+                )
         else:
             raise NotImplementedError
 

@@ -7,7 +7,11 @@ import dill
 import pandarallel
 import pandas as pd
 from pandarallel.data_types import DataType
-from pandarallel.progress_bars import ProgressBarsType, get_progress_bars, progress_wrapper
+from pandarallel.progress_bars import (
+    ProgressBarsType,
+    get_progress_bars,
+    progress_wrapper,
+)
 from pandarallel.utils import WorkerStatus
 
 CONTEXT = multiprocessing.get_context("fork")
@@ -105,7 +109,8 @@ def parallelize_with_pipe(
 
         multiplicator_factor = (
             len(cast(pd.DataFrame, data).columns)
-            if progress_bars_type == ProgressBarsType.InUserDefinedFunctionMultiplyByNumberOfColumns
+            if progress_bars_type
+            == ProgressBarsType.InUserDefinedFunctionMultiplyByNumberOfColumns
             else 1
         )
 
@@ -146,7 +151,9 @@ def parallelize_with_pipe(
 
         generation = count()
 
-        while any((worker_status == WorkerStatus.Running for worker_status in workers_status)):
+        while any(
+            (worker_status == WorkerStatus.Running for worker_status in workers_status)
+        ):
             message: Tuple[int, WorkerStatus, Any] = master_workers_queue.get()
             worker_index, worker_status, payload = message
             workers_status[worker_index] = worker_status

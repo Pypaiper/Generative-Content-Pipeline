@@ -63,8 +63,14 @@ def log_cuda_max_memory(stage: str = None):
     torch.cuda.synchronize()
     max_memory_allocated = torch.cuda.max_memory_allocated()
     max_memory_reserved = torch.cuda.max_memory_reserved()
-    log_message("CUDA max memory max memory allocated at " + stage + ": %.1f GB", max_memory_allocated / GIGABYTE)
-    log_message("CUDA max memory max memory reserved at " + stage + ": %.1f GB", max_memory_reserved / GIGABYTE)
+    log_message(
+        "CUDA max memory max memory allocated at " + stage + ": %.1f GB",
+        max_memory_allocated / GIGABYTE,
+    )
+    log_message(
+        "CUDA max memory max memory reserved at " + stage + ": %.1f GB",
+        max_memory_reserved / GIGABYTE,
+    )
 
 
 # ======================================================
@@ -101,7 +107,9 @@ def log_model_params(model: nn.Module):
     num_params, num_params_trainable = get_model_numel(model)
     model_name = model.__class__.__name__
     log_message(f"[{model_name}] Number of parameters: {format_numel_str(num_params)}")
-    log_message(f"[{model_name}] Number of trainable parameters: {format_numel_str(num_params_trainable)}")
+    log_message(
+        f"[{model_name}] Number of trainable parameters: {format_numel_str(num_params_trainable)}"
+    )
 
 
 # ======================================================
@@ -257,7 +265,9 @@ def to_torch_dtype(dtype: str | torch.dtype) -> torch.dtype:
 
 
 class Timer:
-    def __init__(self, name, log=False, barrier=False, coordinator: DistCoordinator | None = None):
+    def __init__(
+        self, name, log=False, barrier=False, coordinator: DistCoordinator | None = None
+    ):
         self.name = name
         self.start_time = None
         self.end_time = None
@@ -288,7 +298,12 @@ class Timer:
 
 
 class Timers:
-    def __init__(self, record_time: bool, record_barrier: bool = False, coordinator: DistCoordinator | None = None):
+    def __init__(
+        self,
+        record_time: bool,
+        record_barrier: bool = False,
+        coordinator: DistCoordinator | None = None,
+    ):
         self.timers = OrderedDict()
         self.record_time = record_time
         self.record_barrier = record_barrier
@@ -297,13 +312,18 @@ class Timers:
     def __getitem__(self, name: str) -> Timer:
         if name not in self.timers:
             if self.record_time:
-                self.timers[name] = Timer(name, barrier=self.record_barrier, coordinator=self.coordinator)
+                self.timers[name] = Timer(
+                    name, barrier=self.record_barrier, coordinator=self.coordinator
+                )
             else:
                 self.timers[name] = nullcontext()
         return self.timers[name]
 
     def to_dict(self):
-        return {f"time_debug/{name}": timer.elapsed_time for name, timer in self.timers.items()}
+        return {
+            f"time_debug/{name}": timer.elapsed_time
+            for name, timer in self.timers.items()
+        }
 
     def to_str(self, epoch: int, step: int) -> str:
         log_str = f"Rank {dist.get_rank()} | Epoch {epoch} | Step {step} | "
@@ -400,7 +420,9 @@ class ProfilerContext:
                     torch.profiler.ProfilerActivity.CPU,
                     torch.profiler.ProfilerActivity.CUDA,
                 ],
-                schedule=torch.profiler.schedule(wait=wait, warmup=warmup, active=active, repeat=repeat),
+                schedule=torch.profiler.schedule(
+                    wait=wait, warmup=warmup, active=active, repeat=repeat
+                ),
                 record_shapes=record_shapes,
                 with_stack=with_stack,
                 on_trace_ready=torch.profiler.tensorboard_trace_handler(save_path),

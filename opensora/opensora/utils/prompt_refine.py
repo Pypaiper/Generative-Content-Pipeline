@@ -72,7 +72,9 @@ def image_to_url(image_path):
     return f"data:{mime_type};base64,{base64_encoded_data}"
 
 
-def refine_prompt(prompt: str, retry_times: int = 3, type: str = "t2v", image_path: str = None):
+def refine_prompt(
+    prompt: str, retry_times: int = 3, type: str = "t2v", image_path: str = None
+):
     """
     Refine a prompt to a format that can be used by the model for inference
     """
@@ -224,11 +226,18 @@ def refine_prompt(prompt: str, retry_times: int = 3, type: str = "t2v", image_pa
     return prompt
 
 
-def refine_prompts(prompts: list[str], retry_times: int = 3, type: str = "t2v", image_paths: list[str] = None):
+def refine_prompts(
+    prompts: list[str],
+    retry_times: int = 3,
+    type: str = "t2v",
+    image_paths: list[str] = None,
+):
     if image_paths is None:
         image_paths = [None] * len(prompts)
     refined_prompts = []
     for prompt, image_path in zip(prompts, image_paths):
-        refined_prompt = refine_prompt(prompt, retry_times=retry_times, type=type, image_path=image_path)
+        refined_prompt = refine_prompt(
+            prompt, retry_times=retry_times, type=type, image_path=image_path
+        )
         refined_prompts.append(refined_prompt)
     return refined_prompts

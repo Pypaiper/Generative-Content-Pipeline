@@ -8,27 +8,41 @@ from opensora.registry import MODELS
 
 @MODELS.register_module("text_embedder")
 class HFEmbedder(nn.Module):
-    def __init__(self, from_pretrained: str, max_length: int, shardformer: bool = False, **hf_kwargs):
+    def __init__(
+        self,
+        from_pretrained: str,
+        max_length: int,
+        shardformer: bool = False,
+        **hf_kwargs,
+    ):
         super().__init__()
         self.is_clip = "openai" in from_pretrained
         self.max_length = max_length
         self.output_key = "pooler_output" if self.is_clip else "last_hidden_state"
 
         if self.is_clip:
-            self.tokenizer: CLIPTokenizer = CLIPTokenizer.from_pretrained(from_pretrained, max_length=max_length)
-            self.hf_module: CLIPTextModel = CLIPTextModel.from_pretrained(from_pretrained, **hf_kwargs)
+            self.tokenizer: CLIPTokenizer = CLIPTokenizer.from_pretrained(
+                from_pretrained, max_length=max_length
+            )
+            self.hf_module: CLIPTextModel = CLIPTextModel.from_pretrained(
+                from_pretrained, **hf_kwargs
+            )
             assert not shardformer, "Shardformer is not supported for CLIP"
         else:
             self.tokenizer: T5Tokenizer = T5Tokenizer.from_pretrained(
                 from_pretrained, max_length=max_length, legacy=True
             )
-            self.hf_module: T5EncoderModel = T5EncoderModel.from_pretrained(from_pretrained, **hf_kwargs)
+            self.hf_module: T5EncoderModel = T5EncoderModel.from_pretrained(
+                from_pretrained, **hf_kwargs
+            )
             if shardformer:
                 self.hf_module = shardformer_t5(self.hf_module)
 
         self.hf_module = self.hf_module.eval().requires_grad_(False)
 
-    def forward(self, text: list[str], added_tokens: int = 0, seq_align: int = 1) -> Tensor:
+    def forward(
+        self, text: list[str], added_tokens: int = 0, seq_align: int = 1
+    ) -> Tensor:
         batch_encoding = self.tokenizer(
             text,
             truncation=True,
@@ -42,7 +56,9 @@ class HFEmbedder(nn.Module):
         if (added_tokens + seq_len) % seq_align != 0:
             num_pad_tokens = seq_align - (added_tokens + seq_len) % seq_align
             batch_encoding["input_ids"] = nn.functional.pad(
-                batch_encoding["input_ids"], (0, num_pad_tokens), value=self.tokenizer.pad_token_id
+                batch_encoding["input_ids"],
+                (0, num_pad_tokens),
+                value=self.tokenizer.pad_token_id,
             )
 
         outputs = self.hf_module(

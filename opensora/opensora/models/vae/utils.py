@@ -12,10 +12,14 @@ def ceil_to_divisible(n: int, dividend: int) -> int:
     return math.ceil(dividend / (dividend // n))
 
 
-def chunked_avg_pool1d(input, kernel_size, stride=None, padding=0, ceil_mode=False, count_include_pad=True):
+def chunked_avg_pool1d(
+    input, kernel_size, stride=None, padding=0, ceil_mode=False, count_include_pad=True
+):
     n_chunks = math.ceil(input.numel() / NUMEL_LIMIT)
     if n_chunks == 1:
-        return F.avg_pool1d(input, kernel_size, stride, padding, ceil_mode, count_include_pad)
+        return F.avg_pool1d(
+            input, kernel_size, stride, padding, ceil_mode, count_include_pad
+        )
     else:
         l_in = input.shape[-1]
         l_out = math.floor((l_in + 2 * padding - kernel_size) / stride + 1)
@@ -24,7 +28,9 @@ def chunked_avg_pool1d(input, kernel_size, stride=None, padding=0, ceil_mode=Fal
         out_list = []
 
         for inp_chunk in input.chunk(n_chunks, dim=0):
-            out_chunk = F.avg_pool1d(inp_chunk, kernel_size, stride, padding, ceil_mode, count_include_pad)
+            out_chunk = F.avg_pool1d(
+                inp_chunk, kernel_size, stride, padding, ceil_mode, count_include_pad
+            )
             out_list.append(out_chunk)
         return torch.cat(out_list, dim=0)
 
@@ -45,13 +51,21 @@ def chunked_interpolate(input, scale_factor):
 
 
 def get_conv3d_output_shape(
-    input_shape: torch.Size, out_channels: int, kernel_size: list, stride: list, padding: int, dilation: list
+    input_shape: torch.Size,
+    out_channels: int,
+    kernel_size: list,
+    stride: list,
+    padding: int,
+    dilation: list,
 ) -> list:
     output_shape = [out_channels]
     if len(input_shape) == 5:
         output_shape.insert(0, input_shape[0])
     for i, d in enumerate(input_shape[-3:]):
-        d_out = math.floor((d + 2 * padding[i] - dilation[i] * (kernel_size[i] - 1) - 1) / stride[i] + 1)
+        d_out = math.floor(
+            (d + 2 * padding[i] - dilation[i] * (kernel_size[i] - 1) - 1) / stride[i]
+            + 1
+        )
         output_shape.append(d_out)
     return output_shape
 
@@ -74,7 +88,9 @@ def channel_chunk_conv3d(
 ):
     out_channels, in_channels = weight.shape[:2]
     kernel_size = weight.shape[2:]
-    output_shape = get_conv3d_output_shape(input.shape, out_channels, kernel_size, stride, padding, dilation)
+    output_shape = get_conv3d_output_shape(
+        input.shape, out_channels, kernel_size, stride, padding, dilation
+    )
     n_in_chunks = get_conv3d_n_chunks(input.numel(), in_channels, numel_limit)
     n_out_chunks = get_conv3d_n_chunks(
         np.prod(output_shape),
@@ -123,11 +139,15 @@ class DiagonalGaussianDistribution(object):
         self.std = torch.exp(0.5 * self.logvar)
         self.var = torch.exp(self.logvar)
         if self.deterministic:
-            self.var = self.std = torch.zeros_like(self.mean).to(device=self.parameters.device, dtype=self.mean.dtype)
+            self.var = self.std = torch.zeros_like(self.mean).to(
+                device=self.parameters.device, dtype=self.mean.dtype
+            )
 
     def sample(self):
         # torch.randn: standard normal distribution
-        x = self.mean + self.std * torch.randn(self.mean.shape).to(device=self.parameters.device, dtype=self.mean.dtype)
+        x = self.mean + self.std * torch.randn(self.mean.shape).to(
+            device=self.parameters.device, dtype=self.mean.dtype
+        )
         return x
 
     def kl(self, other=None):
@@ -135,7 +155,10 @@ class DiagonalGaussianDistribution(object):
             return torch.Tensor([0.0])
         else:
             if other is None:  # SCH: assumes other is a standard normal distribution
-                return 0.5 * torch.sum(torch.pow(self.mean, 2) + self.var - 1.0 - self.logvar, dim=[1, 3, 4]).flatten(0)
+                return 0.5 * torch.sum(
+                    torch.pow(self.mean, 2) + self.var - 1.0 - self.logvar,
+                    dim=[1, 3, 4],
+                ).flatten(0)
             else:
                 return 0.5 * torch.sum(
                     torch.pow(self.mean - other.mean, 2) / other.var
@@ -159,7 +182,14 @@ class ChannelChunkConv3d(nn.Conv3d):
             numel *= input_shape[0]
         for i, d in enumerate(input_shape[-3:]):
             d_out = math.floor(
-                (d + 2 * self.padding[i] - self.dilation[i] * (self.kernel_size[i] - 1) - 1) / self.stride[i] + 1
+                (
+                    d
+                    + 2 * self.padding[i]
+                    - self.dilation[i] * (self.kernel_size[i] - 1)
+                    - 1
+                )
+                / self.stride[i]
+                + 1
             )
             numel *= d_out
         return numel
@@ -173,27 +203,51 @@ class ChannelChunkConv3d(nn.Conv3d):
         if input.numel() // input.size(0) < ChannelChunkConv3d.CONV3D_NUMEL_LIMIT:
             return super().forward(input)
         n_in_chunks = self._get_n_chunks(input.numel(), self.in_channels)
-        n_out_chunks = self._get_n_chunks(self._get_output_numel(input.shape), self.out_channels)
+        n_out_chunks = self._get_n_chunks(
+            self._get_output_numel(input.shape), self.out_channels
+        )
         if n_in_chunks == 1 and n_out_chunks == 1:
             return super().forward(input)
         outputs = []
         input_shards = input.chunk(n_in_chunks, dim=1)
-        for weight, bias in zip(self.weight.chunk(n_out_chunks), self.bias.chunk(n_out_chunks)):
+        for weight, bias in zip(
+            self.weight.chunk(n_out_chunks), self.bias.chunk(n_out_chunks)
+        ):
             weight_shards = weight.chunk(n_in_chunks, dim=1)
             o = None
             for x, w in zip(input_shards, weight_shards):
                 if o is None:
-                    o = F.conv3d(x, w, bias, self.stride, self.padding, self.dilation, self.groups)
+                    o = F.conv3d(
+                        x,
+                        w,
+                        bias,
+                        self.stride,
+                        self.padding,
+                        self.dilation,
+                        self.groups,
+                    )
                 else:
-                    o += F.conv3d(x, w, None, self.stride, self.padding, self.dilation, self.groups)
+                    o += F.conv3d(
+                        x,
+                        w,
+                        None,
+                        self.stride,
+                        self.padding,
+                        self.dilation,
+                        self.groups,
+                    )
             outputs.append(o)
         return torch.cat(outputs, dim=1)
 
 
 @torch.compile(mode="max-autotune-no-cudagraphs", dynamic=True)
-def pad_for_conv3d(x: torch.Tensor, width_pad: int, height_pad: int, time_pad: int) -> torch.Tensor:
+def pad_for_conv3d(
+    x: torch.Tensor, width_pad: int, height_pad: int, time_pad: int
+) -> torch.Tensor:
     if width_pad > 0 or height_pad > 0:
-        x = F.pad(x, (width_pad, width_pad, height_pad, height_pad), mode="constant", value=0)
+        x = F.pad(
+            x, (width_pad, width_pad, height_pad, height_pad), mode="constant", value=0
+        )
     if time_pad > 0:
         x = F.pad(x, (0, 0, 0, 0, time_pad, time_pad), mode="replicate")
     return x
@@ -229,11 +283,15 @@ class PadConv3D(nn.Module):
 
         # == specific padding ==
         time_kernel_size, height_kernel_size, width_kernel_size = kernel_size
-        assert time_kernel_size == height_kernel_size == width_kernel_size, "only support cubic kernel size"
+        assert time_kernel_size == height_kernel_size == width_kernel_size, (
+            "only support cubic kernel size"
+        )
         if time_kernel_size == 3:
             self.pad = pad_for_conv3d_kernel_3x3x3
         else:
-            assert time_kernel_size == 1, f"only support kernel size 1/3 for now, got {kernel_size}"
+            assert time_kernel_size == 1, (
+                f"only support kernel size 1/3 for now, got {kernel_size}"
+            )
             self.pad = lambda x: x
 
         self.conv = nn.Conv3d(
@@ -254,4 +312,6 @@ class PadConv3D(nn.Module):
 class ChannelChunkPadConv3D(PadConv3D):
     def __init__(self, in_channels: int, out_channels: int, kernel_size: int = 3):
         super().__init__(in_channels, out_channels, kernel_size)
-        self.conv = ChannelChunkConv3d(in_channels, out_channels, kernel_size, stride=1, padding=0, dilation=1)
+        self.conv = ChannelChunkConv3d(
+            in_channels, out_channels, kernel_size, stride=1, padding=0, dilation=1
+        )

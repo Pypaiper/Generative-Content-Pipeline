@@ -9,7 +9,12 @@ from .utils import map_target_fps
 
 
 class Bucket:
-    def __init__(self, bucket_config: dict[str, dict[int, tuple[float, int] | tuple[tuple[float, float], int]]]):
+    def __init__(
+        self,
+        bucket_config: dict[
+            str, dict[int, tuple[float, int] | tuple[tuple[float, float], int]]
+        ],
+    ):
         """
         Args:
             bucket_config (dict): A dictionary containing the bucket configuration.
@@ -37,20 +42,35 @@ class Bucket:
                 If the probability is a tuple, the second value should be the probability to skip to the next time.
         """
 
-        aspect_ratios = {key: get_resolution_with_aspect_ratio(key) for key in bucket_config.keys()}
+        aspect_ratios = {
+            key: get_resolution_with_aspect_ratio(key) for key in bucket_config.keys()
+        }
         bucket_probs = OrderedDict()
         bucket_bs = OrderedDict()
-        bucket_names = sorted(bucket_config.keys(), key=lambda x: aspect_ratios[x][0], reverse=True)
+        bucket_names = sorted(
+            bucket_config.keys(), key=lambda x: aspect_ratios[x][0], reverse=True
+        )
 
         for key in bucket_names:
-            bucket_time_names = sorted(bucket_config[key].keys(), key=lambda x: x, reverse=True)
-            bucket_probs[key] = OrderedDict({k: bucket_config[key][k][0] for k in bucket_time_names})
-            bucket_bs[key] = OrderedDict({k: bucket_config[key][k][1] for k in bucket_time_names})
+            bucket_time_names = sorted(
+                bucket_config[key].keys(), key=lambda x: x, reverse=True
+            )
+            bucket_probs[key] = OrderedDict(
+                {k: bucket_config[key][k][0] for k in bucket_time_names}
+            )
+            bucket_bs[key] = OrderedDict(
+                {k: bucket_config[key][k][1] for k in bucket_time_names}
+            )
 
         self.hw_criteria = {k: aspect_ratios[k][0] for k in bucket_names}
-        self.t_criteria = {k1: {k2: k2 for k2 in bucket_config[k1].keys()} for k1 in bucket_names}
+        self.t_criteria = {
+            k1: {k2: k2 for k2 in bucket_config[k1].keys()} for k1 in bucket_names
+        }
         self.ar_criteria = {
-            k1: {k2: {k3: v3 for k3, v3 in aspect_ratios[k1][1].items()} for k2 in bucket_config[k1].keys()}
+            k1: {
+                k2: {k3: v3 for k3, v3 in aspect_ratios[k1][1].items()}
+                for k2 in bucket_config[k1].keys()
+            }
             for k1 in bucket_names
         }
 

@@ -34,7 +34,7 @@ class ActivationManager:
         size = x.numel()
         if self.avail_offset + size > self.total_size:
             raise RuntimeError("Activation buffer is full")
-        assert x.dtype == self.buffer.dtype, f"Wrong dtype of offload tensor"
+        assert x.dtype == self.buffer.dtype, "Wrong dtype of offload tensor"
         cpu_x = self.buffer[self.avail_offset : self.avail_offset + size].view_as(x)
         cpu_x.copy_(x)
         x.data = cpu_x
@@ -44,7 +44,7 @@ class ActivationManager:
     def onload(self, x: torch.Tensor) -> None:
         if not self.enable or id(x) in self.ignore_tensor_id_set:
             return
-        assert self.tensor_id_queue[-1] == id(x), f"Wrong order of offload/onload"
+        assert self.tensor_id_queue[-1] == id(x), "Wrong order of offload/onload"
         # current x is pinned memory
         assert x.data.is_pinned()
         x.data = x.data.to(get_current_device(), non_blocking=True)
@@ -231,11 +231,16 @@ def checkpoint(
     # Hack to mix *args with **kwargs in a python 2.7-compliant way
     preserve = kwargs.pop("preserve_rng_state", True)
     if kwargs and use_reentrant:
-        raise ValueError("Unexpected keyword arguments: " + ",".join(arg for arg in kwargs))
+        raise ValueError(
+            "Unexpected keyword arguments: " + ",".join(arg for arg in kwargs)
+        )
 
     if use_reentrant:
         if context_fn is not noop_context_fn or debug is not False:
-            raise ValueError("Passing `context_fn` or `debug` is only supported when " "use_reentrant=False.")
+            raise ValueError(
+                "Passing `context_fn` or `debug` is only supported when "
+                "use_reentrant=False."
+            )
         return CheckpointFunctionWithOffload.apply(function, preserve, *args)
     else:
         gen = _checkpoint_without_reentrant_generator(
@@ -267,5 +272,7 @@ def auto_grad_checkpoint(module, *args, **kwargs):
         if not isinstance(module, Iterable):
             return checkpoint(module, *args, use_reentrant=True, **kwargs)
         gc_step = module[0].grad_checkpointing_step
-        return checkpoint_sequential(module, gc_step, *args, use_reentrant=False, **kwargs)
+        return checkpoint_sequential(
+            module, gc_step, *args, use_reentrant=False, **kwargs
+        )
     return module(*args, **kwargs)

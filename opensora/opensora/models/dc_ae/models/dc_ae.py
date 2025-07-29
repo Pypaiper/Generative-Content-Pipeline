@@ -90,10 +90,14 @@ class DCAEConfig:
     time_compression_ratio: int = 1
     spatial_compression_ratio: int = 32
     encoder: EncoderConfig = field(
-        default_factory=lambda: EncoderConfig(in_channels="${..in_channels}", latent_channels="${..latent_channels}")
+        default_factory=lambda: EncoderConfig(
+            in_channels="${..in_channels}", latent_channels="${..latent_channels}"
+        )
     )
     decoder: DecoderConfig = field(
-        default_factory=lambda: DecoderConfig(in_channels="${..in_channels}", latent_channels="${..latent_channels}")
+        default_factory=lambda: DecoderConfig(
+            in_channels="${..in_channels}", latent_channels="${..latent_channels}"
+        )
     )
     use_quant_conv: bool = False
 
@@ -110,11 +114,15 @@ class DCAEConfig:
     spatial_tile_size: int = 256
     temporal_tile_size: int = 32
     tile_overlap_factor: float = 0.25
-    
 
 
 def build_block(
-    block_type: str, in_channels: int, out_channels: int, norm: Optional[str], act: Optional[str], is_video: bool
+    block_type: str,
+    in_channels: int,
+    out_channels: int,
+    norm: Optional[str],
+    act: Optional[str],
+    is_video: bool,
 ) -> nn.Module:
     if block_type == "ResBlock":
         assert in_channels == out_channels
@@ -132,12 +140,22 @@ def build_block(
     elif block_type == "EViT_GLU":
         assert in_channels == out_channels
         block = EfficientViTBlock(
-            in_channels, norm=norm, act_func=act, local_module="GLUMBConv", scales=(), is_video=is_video
+            in_channels,
+            norm=norm,
+            act_func=act,
+            local_module="GLUMBConv",
+            scales=(),
+            is_video=is_video,
         )
     elif block_type == "EViTS5_GLU":
         assert in_channels == out_channels
         block = EfficientViTBlock(
-            in_channels, norm=norm, act_func=act, local_module="GLUMBConv", scales=(5,), is_video=is_video
+            in_channels,
+            norm=norm,
+            act_func=act,
+            local_module="GLUMBConv",
+            scales=(5,),
+            is_video=is_video,
         )
     else:
         raise ValueError(f"block_type {block_type} is not supported")
@@ -145,12 +163,22 @@ def build_block(
 
 
 def build_stage_main(
-    width: int, depth: int, block_type: str | list[str], norm: str, act: str, input_width: int, is_video: bool
+    width: int,
+    depth: int,
+    block_type: str | list[str],
+    norm: str,
+    act: str,
+    input_width: int,
+    is_video: bool,
 ) -> list[nn.Module]:
-    assert isinstance(block_type, str) or (isinstance(block_type, list) and depth == len(block_type))
+    assert isinstance(block_type, str) or (
+        isinstance(block_type, list) and depth == len(block_type)
+    )
     stage = []
     for d in range(depth):
-        current_block_type = block_type[d] if isinstance(block_type, list) else block_type
+        current_block_type = (
+            block_type[d] if isinstance(block_type, list) else block_type
+        )
         block = build_block(
             block_type=current_block_type,
             in_channels=width if d > 0 else input_width,
@@ -195,7 +223,9 @@ def build_downsample_block(
         )
     elif block_type == "ConvPixelUnshuffle":
         if is_video:
-            raise NotImplementedError("ConvPixelUnshuffle downsample is not supported for video")
+            raise NotImplementedError(
+                "ConvPixelUnshuffle downsample is not supported for video"
+            )
         block = ConvPixelUnshuffleDownSampleLayer(
             in_channels=in_channels, out_channels=out_channels, kernel_size=3, factor=2
         )
@@ -205,7 +235,10 @@ def build_downsample_block(
         pass
     elif shortcut == "averaging":
         shortcut_block = PixelUnshuffleChannelAveragingDownSampleLayer(
-            in_channels=in_channels, out_channels=out_channels, factor=2, temporal_downsample=temporal_downsample
+            in_channels=in_channels,
+            out_channels=out_channels,
+            factor=2,
+            temporal_downsample=temporal_downsample,
         )
         block = ResidualBlock(block, shortcut_block)
     else:
@@ -223,7 +256,9 @@ def build_upsample_block(
 ) -> nn.Module:
     if block_type == "ConvPixelShuffle":
         if is_video:
-            raise NotImplementedError("ConvPixelShuffle upsample is not supported for video")
+            raise NotImplementedError(
+                "ConvPixelShuffle upsample is not supported for video"
+            )
         block = ConvPixelShuffleUpSampleLayer(
             in_channels=in_channels, out_channels=out_channels, kernel_size=3, factor=2
         )
@@ -242,7 +277,10 @@ def build_upsample_block(
         pass
     elif shortcut == "duplicating":
         shortcut_block = ChannelDuplicatingPixelShuffleUpSampleLayer(
-            in_channels=in_channels, out_channels=out_channels, factor=2, temporal_upsample=temporal_upsample
+            in_channels=in_channels,
+            out_channels=out_channels,
+            factor=2,
+            temporal_upsample=temporal_upsample,
         )
         block = ResidualBlock(block, shortcut_block)
     else:
@@ -251,7 +289,11 @@ def build_upsample_block(
 
 
 def build_encoder_project_in_block(
-    in_channels: int, out_channels: int, factor: int, downsample_block_type: str, is_video: bool
+    in_channels: int,
+    out_channels: int,
+    factor: int,
+    downsample_block_type: str,
+    is_video: bool,
 ):
     if factor == 1:
         block = ConvLayer(
@@ -266,12 +308,19 @@ def build_encoder_project_in_block(
         )
     elif factor == 2:
         if is_video:
-            raise NotImplementedError("Downsample during project_in is not supported for video")
+            raise NotImplementedError(
+                "Downsample during project_in is not supported for video"
+            )
         block = build_downsample_block(
-            block_type=downsample_block_type, in_channels=in_channels, out_channels=out_channels, shortcut=None
+            block_type=downsample_block_type,
+            in_channels=in_channels,
+            out_channels=out_channels,
+            shortcut=None,
         )
     else:
-        raise ValueError(f"downsample factor {factor} is not supported for encoder project in")
+        raise ValueError(
+            f"downsample factor {factor} is not supported for encoder project in"
+        )
     return block
 
 
@@ -307,11 +356,15 @@ def build_encoder_project_out_block(
         )
         block = ResidualBlock(block, shortcut_block)
     else:
-        raise ValueError(f"shortcut {shortcut} is not supported for encoder project out")
+        raise ValueError(
+            f"shortcut {shortcut} is not supported for encoder project out"
+        )
     return block
 
 
-def build_decoder_project_in_block(in_channels: int, out_channels: int, shortcut: Optional[str], is_video: bool):
+def build_decoder_project_in_block(
+    in_channels: int, out_channels: int, shortcut: Optional[str], is_video: bool
+):
     block = ConvLayer(
         in_channels=in_channels,
         out_channels=out_channels,
@@ -362,14 +415,21 @@ def build_decoder_project_out_block(
         )
     elif factor == 2:
         if is_video:
-            raise NotImplementedError("Upsample during project_out is not supported for video")
+            raise NotImplementedError(
+                "Upsample during project_out is not supported for video"
+            )
         layers.append(
             build_upsample_block(
-                block_type=upsample_block_type, in_channels=in_channels, out_channels=out_channels, shortcut=None
+                block_type=upsample_block_type,
+                in_channels=in_channels,
+                out_channels=out_channels,
+                shortcut=None,
             )
         )
     else:
-        raise ValueError(f"upsample factor {factor} is not supported for decoder project out")
+        raise ValueError(
+            f"upsample factor {factor} is not supported for decoder project out"
+        )
     return OpSequential(layers)
 
 
@@ -387,7 +447,9 @@ class Encoder(nn.Module):
 
         self.project_in = build_encoder_project_in_block(
             in_channels=cfg.in_channels,
-            out_channels=cfg.width_list[0] if cfg.depth_list[0] > 0 else cfg.width_list[1],
+            out_channels=cfg.width_list[0]
+            if cfg.depth_list[0] > 0
+            else cfg.width_list[1],
             factor=1 if cfg.depth_list[0] > 0 else 2,
             downsample_block_type=cfg.downsample_block_type,
             is_video=cfg.is_video,
@@ -395,7 +457,11 @@ class Encoder(nn.Module):
 
         self.stages: list[OpSequential] = []
         for stage_id, (width, depth) in enumerate(zip(cfg.width_list, cfg.depth_list)):
-            block_type = cfg.block_type[stage_id] if isinstance(cfg.block_type, list) else cfg.block_type
+            block_type = (
+                cfg.block_type[stage_id]
+                if isinstance(cfg.block_type, list)
+                else cfg.block_type
+            )
             stage = build_stage_main(
                 width=width,
                 depth=depth,
@@ -410,10 +476,14 @@ class Encoder(nn.Module):
                 downsample_block = build_downsample_block(
                     block_type=cfg.downsample_block_type,
                     in_channels=width,
-                    out_channels=cfg.width_list[stage_id + 1] if cfg.downsample_match_channel else width,
+                    out_channels=cfg.width_list[stage_id + 1]
+                    if cfg.downsample_match_channel
+                    else width,
                     shortcut=cfg.downsample_shortcut,
                     is_video=cfg.is_video,
-                    temporal_downsample=cfg.temporal_downsample[stage_id] if cfg.temporal_downsample != [] else False,
+                    temporal_downsample=cfg.temporal_downsample[stage_id]
+                    if cfg.temporal_downsample != []
+                    else False,
                 )
                 stage.append(downsample_block)
             self.stages.append(OpSequential(stage))
@@ -421,7 +491,9 @@ class Encoder(nn.Module):
 
         self.project_out = build_encoder_project_out_block(
             in_channels=cfg.width_list[-1],
-            out_channels=2 * cfg.latent_channels if cfg.double_latent else cfg.latent_channels,
+            out_channels=2 * cfg.latent_channels
+            if cfg.double_latent
+            else cfg.latent_channels,
             norm=cfg.out_norm,
             act=cfg.out_act,
             shortcut=cfg.out_shortcut,
@@ -451,8 +523,12 @@ class Decoder(nn.Module):
         assert isinstance(cfg.block_type, str) or (
             isinstance(cfg.block_type, list) and len(cfg.block_type) == num_stages
         )
-        assert isinstance(cfg.norm, str) or (isinstance(cfg.norm, list) and len(cfg.norm) == num_stages)
-        assert isinstance(cfg.act, str) or (isinstance(cfg.act, list) and len(cfg.act) == num_stages)
+        assert isinstance(cfg.norm, str) or (
+            isinstance(cfg.norm, list) and len(cfg.norm) == num_stages
+        )
+        assert isinstance(cfg.act, str) or (
+            isinstance(cfg.act, list) and len(cfg.act) == num_stages
+        )
 
         self.project_in = build_decoder_project_in_block(
             in_channels=cfg.latent_channels,
@@ -462,20 +538,30 @@ class Decoder(nn.Module):
         )
 
         self.stages: list[OpSequential] = []
-        for stage_id, (width, depth) in reversed(list(enumerate(zip(cfg.width_list, cfg.depth_list)))):
+        for stage_id, (width, depth) in reversed(
+            list(enumerate(zip(cfg.width_list, cfg.depth_list)))
+        ):
             stage = []
             if stage_id < num_stages - 1 and depth > 0:
                 upsample_block = build_upsample_block(
                     block_type=cfg.upsample_block_type,
                     in_channels=cfg.width_list[stage_id + 1],
-                    out_channels=width if cfg.upsample_match_channel else cfg.width_list[stage_id + 1],
+                    out_channels=width
+                    if cfg.upsample_match_channel
+                    else cfg.width_list[stage_id + 1],
                     shortcut=cfg.upsample_shortcut,
                     is_video=cfg.is_video,
-                    temporal_upsample=cfg.temporal_upsample[stage_id] if cfg.temporal_upsample != [] else False,
+                    temporal_upsample=cfg.temporal_upsample[stage_id]
+                    if cfg.temporal_upsample != []
+                    else False,
                 )
                 stage.append(upsample_block)
 
-            block_type = cfg.block_type[stage_id] if isinstance(cfg.block_type, list) else cfg.block_type
+            block_type = (
+                cfg.block_type[stage_id]
+                if isinstance(cfg.block_type, list)
+                else cfg.block_type
+            )
             norm = cfg.norm[stage_id] if isinstance(cfg.norm, list) else cfg.norm
             act = cfg.act[stage_id] if isinstance(cfg.act, list) else cfg.act
             stage.extend(
@@ -486,7 +572,9 @@ class Decoder(nn.Module):
                     norm=norm,
                     act=act,
                     input_width=(
-                        width if cfg.upsample_match_channel else cfg.width_list[min(stage_id + 1, num_stages - 1)]
+                        width
+                        if cfg.upsample_match_channel
+                        else cfg.width_list[min(stage_id + 1, num_stages - 1)]
                     ),
                     is_video=cfg.is_video,
                 )
@@ -495,7 +583,9 @@ class Decoder(nn.Module):
         self.stages = nn.ModuleList(self.stages)
 
         self.project_out = build_decoder_project_out_block(
-            in_channels=cfg.width_list[0] if cfg.depth_list[0] > 0 else cfg.width_list[1],
+            in_channels=cfg.width_list[0]
+            if cfg.depth_list[0] > 0
+            else cfg.width_list[1],
             out_channels=cfg.in_channels,
             factor=1 if cfg.depth_list[0] > 0 else 2,
             upsample_block_type=cfg.upsample_block_type,
@@ -532,14 +622,18 @@ class DCAE(nn.Module):
         self.use_temporal_tiling = cfg.use_temporal_tiling
         self.spatial_tile_size = cfg.spatial_tile_size
         self.temporal_tile_size = cfg.temporal_tile_size
-        assert (
+        assert cfg.spatial_tile_size // cfg.spatial_compression_ratio, (
+            f"spatial tile size {cfg.spatial_tile_size} must be divisible by spatial compression of {cfg.spatial_compression_ratio}"
+        )
+        self.spatial_tile_latent_size = (
             cfg.spatial_tile_size // cfg.spatial_compression_ratio
-        ), f"spatial tile size {cfg.spatial_tile_size} must be divisible by spatial compression of {cfg.spatial_compression_ratio}"
-        self.spatial_tile_latent_size = cfg.spatial_tile_size // cfg.spatial_compression_ratio
-        assert (
+        )
+        assert cfg.temporal_tile_size // cfg.time_compression_ratio, (
+            f"temporal tile size {cfg.temporal_tile_size} must be divisible by temporal compression of {cfg.time_compression_ratio}"
+        )
+        self.temporal_tile_latent_size = (
             cfg.temporal_tile_size // cfg.time_compression_ratio
-        ), f"temporal tile size {cfg.temporal_tile_size} must be divisible by temporal compression of {cfg.time_compression_ratio}"
-        self.temporal_tile_latent_size = cfg.temporal_tile_size // cfg.time_compression_ratio
+        )
         self.tile_overlap_factor = cfg.tile_overlap_factor
         if self.cfg.pretrained_path is not None:
             self.load_model()
@@ -549,7 +643,9 @@ class DCAE(nn.Module):
 
     def load_model(self):
         if self.cfg.pretrained_source == "dc-ae":
-            state_dict = torch.load(self.cfg.pretrained_path, map_location="cpu", weights_only=True)["state_dict"]
+            state_dict = torch.load(
+                self.cfg.pretrained_path, map_location="cpu", weights_only=True
+            )["state_dict"]
             self.load_state_dict(state_dict)
         else:
             raise NotImplementedError
@@ -561,7 +657,9 @@ class DCAE(nn.Module):
     # def spatial_compression_ratio(self) -> int:
     #     return 2 ** (self.decoder.num_stages - 1)
 
-    def encode_single(self, x: torch.Tensor, is_video_encoder: bool = False) -> torch.Tensor:
+    def encode_single(
+        self, x: torch.Tensor, is_video_encoder: bool = False
+    ) -> torch.Tensor:
         assert x.shape[0] == 1
         is_video = x.dim() == 5
         if is_video and not is_video_encoder:
@@ -580,34 +678,44 @@ class DCAE(nn.Module):
     def _encode(self, x: torch.Tensor) -> torch.Tensor:
         if self.cfg.is_training:
             return self.encoder(x)
-        is_video_encoder = self.encoder.cfg.is_video if self.encoder.cfg.is_video is not None else False
+        is_video_encoder = (
+            self.encoder.cfg.is_video
+            if self.encoder.cfg.is_video is not None
+            else False
+        )
         x_ret = []
         for i in range(x.shape[0]):
             x_ret.append(self.encode_single(x[i : i + 1], is_video_encoder))
         return torch.cat(x_ret, dim=0)
 
-    def blend_v(self, a: torch.Tensor, b: torch.Tensor, blend_extent: int) -> torch.Tensor:
+    def blend_v(
+        self, a: torch.Tensor, b: torch.Tensor, blend_extent: int
+    ) -> torch.Tensor:
         blend_extent = min(a.shape[-2], b.shape[-2], blend_extent)
         for y in range(blend_extent):
-            b[:, :, :, y, :] = a[:, :, :, -blend_extent + y, :] * (1 - y / blend_extent) + b[:, :, :, y, :] * (
-                y / blend_extent
-            )
+            b[:, :, :, y, :] = a[:, :, :, -blend_extent + y, :] * (
+                1 - y / blend_extent
+            ) + b[:, :, :, y, :] * (y / blend_extent)
         return b
 
-    def blend_h(self, a: torch.Tensor, b: torch.Tensor, blend_extent: int) -> torch.Tensor:
+    def blend_h(
+        self, a: torch.Tensor, b: torch.Tensor, blend_extent: int
+    ) -> torch.Tensor:
         blend_extent = min(a.shape[-1], b.shape[-1], blend_extent)
         for x in range(blend_extent):
-            b[:, :, :, :, x] = a[:, :, :, :, -blend_extent + x] * (1 - x / blend_extent) + b[:, :, :, :, x] * (
-                x / blend_extent
-            )
+            b[:, :, :, :, x] = a[:, :, :, :, -blend_extent + x] * (
+                1 - x / blend_extent
+            ) + b[:, :, :, :, x] * (x / blend_extent)
         return b
 
-    def blend_t(self, a: torch.Tensor, b: torch.Tensor, blend_extent: int) -> torch.Tensor:
+    def blend_t(
+        self, a: torch.Tensor, b: torch.Tensor, blend_extent: int
+    ) -> torch.Tensor:
         blend_extent = min(a.shape[-3], b.shape[-3], blend_extent)
         for x in range(blend_extent):
-            b[:, :, x, :, :] = a[:, :, -blend_extent + x, :, :] * (1 - x / blend_extent) + b[:, :, x, :, :] * (
-                x / blend_extent
-            )
+            b[:, :, x, :, :] = a[:, :, -blend_extent + x, :, :] * (
+                1 - x / blend_extent
+            ) + b[:, :, x, :, :] * (x / blend_extent)
         return b
 
     def spatial_tiled_encode(self, x: torch.Tensor) -> torch.Tensor:
@@ -620,7 +728,13 @@ class DCAE(nn.Module):
         for i in range(0, x.shape[-2], net_size):
             row = []
             for j in range(0, x.shape[-1], net_size):
-                tile = x[:, :, :, i : i + self.spatial_tile_size, j : j + self.spatial_tile_size]
+                tile = x[
+                    :,
+                    :,
+                    :,
+                    i : i + self.spatial_tile_size,
+                    j : j + self.spatial_tile_size,
+                ]
                 tile = self._encode(tile)
                 row.append(tile)
             rows.append(row)
@@ -649,7 +763,8 @@ class DCAE(nn.Module):
         for i in range(0, x.shape[2], overlap_size):
             tile = x[:, :, i : i + self.temporal_tile_size, :, :]
             if self.use_spatial_tiling and (
-                tile.shape[-1] > self.spatial_tile_size or tile.shape[-2] > self.spatial_tile_size
+                tile.shape[-1] > self.spatial_tile_size
+                or tile.shape[-2] > self.spatial_tile_size
             ):
                 tile = self.spatial_tiled_encode(tile)
             else:
@@ -666,7 +781,9 @@ class DCAE(nn.Module):
     def encode(self, x: torch.Tensor) -> torch.Tensor:
         if self.use_temporal_tiling and x.shape[2] > self.temporal_tile_size:
             return self.temporal_tiled_encode(x)
-        elif self.use_spatial_tiling and (x.shape[-1] > self.spatial_tile_size or x.shape[-2] > self.spatial_tile_size):
+        elif self.use_spatial_tiling and (
+            x.shape[-1] > self.spatial_tile_size or x.shape[-2] > self.spatial_tile_size
+        ):
             return self.spatial_tiled_encode(x)
         else:
             return self._encode(x)
@@ -682,7 +799,13 @@ class DCAE(nn.Module):
         for i in range(0, z.shape[-2], net_size):
             row = []
             for j in range(0, z.shape[-1], net_size):
-                tile = z[:, :, :, i : i + self.spatial_tile_latent_size, j : j + self.spatial_tile_latent_size]
+                tile = z[
+                    :,
+                    :,
+                    :,
+                    i : i + self.spatial_tile_latent_size,
+                    j : j + self.spatial_tile_latent_size,
+                ]
                 decoded = self._decode(tile)
                 row.append(decoded)
             rows.append(row)
@@ -702,7 +825,9 @@ class DCAE(nn.Module):
         return torch.cat(result_rows, dim=-2)
 
     def temporal_tiled_decode(self, z: torch.Tensor) -> torch.Tensor:
-        overlap_size = int(self.temporal_tile_latent_size * (1 - self.tile_overlap_factor))
+        overlap_size = int(
+            self.temporal_tile_latent_size * (1 - self.tile_overlap_factor)
+        )
         blend_extent = int(self.temporal_tile_size * self.tile_overlap_factor)
         t_limit = self.temporal_tile_size - blend_extent
 
@@ -710,7 +835,8 @@ class DCAE(nn.Module):
         for i in range(0, z.shape[2], overlap_size):
             tile = z[:, :, i : i + self.temporal_tile_latent_size, :, :]
             if self.use_spatial_tiling and (
-                tile.shape[-1] > self.spatial_tile_latent_size or tile.shape[-2] > self.spatial_tile_latent_size
+                tile.shape[-1] > self.spatial_tile_latent_size
+                or tile.shape[-2] > self.spatial_tile_latent_size
             ):
                 decoded = self.spatial_tiled_decode(tile)
             else:
@@ -724,7 +850,9 @@ class DCAE(nn.Module):
 
         return torch.cat(result_row, dim=2)
 
-    def decode_single(self, z: torch.Tensor, is_video_decoder: bool = False) -> torch.Tensor:
+    def decode_single(
+        self, z: torch.Tensor, is_video_decoder: bool = False
+    ) -> torch.Tensor:
         assert z.shape[0] == 1
         is_video = z.dim() == 5
         if is_video and not is_video_decoder:
@@ -742,7 +870,11 @@ class DCAE(nn.Module):
     def _decode(self, z: torch.Tensor) -> torch.Tensor:
         if self.cfg.is_training:
             return self.decoder(z)
-        is_video_decoder = self.decoder.cfg.is_video if self.decoder.cfg.is_video is not None else False
+        is_video_decoder = (
+            self.decoder.cfg.is_video
+            if self.decoder.cfg.is_video is not None
+            else False
+        )
         x_ret = []
         for i in range(z.shape[0]):
             x_ret.append(self.decode_single(z[i : i + 1], is_video_decoder))
@@ -752,7 +884,8 @@ class DCAE(nn.Module):
         if self.use_temporal_tiling and z.shape[2] > self.temporal_tile_latent_size:
             return self.temporal_tiled_decode(z)
         elif self.use_spatial_tiling and (
-            z.shape[-1] > self.spatial_tile_latent_size or z.shape[-2] > self.spatial_tile_latent_size
+            z.shape[-1] > self.spatial_tile_latent_size
+            or z.shape[-2] > self.spatial_tile_latent_size
         ):
             return self.spatial_tiled_decode(z)
         else:
@@ -783,7 +916,9 @@ class DCAE(nn.Module):
         latent_size.append((input_size[0] - 1) // self.time_compression_ratio + 1)
         # H, w
         for i in range(1, 3):
-            latent_size.append((input_size[i] - 1) // self.spatial_compression_ratio + 1)
+            latent_size.append(
+                (input_size[i] - 1) // self.spatial_compression_ratio + 1
+            )
         return latent_size
 
 
@@ -809,7 +944,8 @@ def dc_ae_f32(name: str, pretrained_path: str) -> DCAEConfig:
     else:
         raise NotImplementedError
     cfg = OmegaConf.from_dotlist(cfg_str.split(" "))
-    cfg: DCAEConfig = OmegaConf.to_object(OmegaConf.merge(OmegaConf.structured(DCAEConfig), cfg))
+    cfg: DCAEConfig = OmegaConf.to_object(
+        OmegaConf.merge(OmegaConf.structured(DCAEConfig), cfg)
+    )
     cfg.pretrained_path = pretrained_path
     return cfg
-
