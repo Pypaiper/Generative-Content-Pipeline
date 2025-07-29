@@ -10,8 +10,12 @@ dependencies = [
     "pydantic-settings",
     "asyncpg",
     "psycopg2",
-    "aiosqlite"
+    "aiosqlite",
+    "bs4"
 ]
+
+[project.optional-dependencies]
+dev = ["ipykernel"]
 
 [build-system]
 requires = ["setuptools>=61.0.0", "wheel"]
