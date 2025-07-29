@@ -1,5 +1,5 @@
 # Modified from HunyuanVideo
-# 
+#
 # Copyright 2024 HunyuanVideo
 #
 # This source code is licensed under the license found in the
@@ -59,7 +59,9 @@ class EncoderCausal3D(nn.Module):
         super().__init__()
         self.layers_per_block = layers_per_block
 
-        self.conv_in = CausalConv3d(in_channels, block_out_channels[0], kernel_size=3, stride=1)
+        self.conv_in = CausalConv3d(
+            in_channels, block_out_channels[0], kernel_size=3, stride=1
+        )
         self.mid_block = None
         self.down_blocks = nn.ModuleList([])
 
@@ -75,13 +77,16 @@ class EncoderCausal3D(nn.Module):
             if time_compression_ratio == 4:
                 add_spatial_downsample = bool(i < num_spatial_downsample_layers)
                 add_time_downsample = bool(
-                    i >= (len(block_out_channels) - 1 - num_time_downsample_layers) and not is_final_block
+                    i >= (len(block_out_channels) - 1 - num_time_downsample_layers)
+                    and not is_final_block
                 )
             elif time_compression_ratio == 8:
                 add_spatial_downsample = bool(i < num_spatial_downsample_layers)
                 add_time_downsample = bool(i < num_spatial_downsample_layers)
             else:
-                raise ValueError(f"Unsupported time_compression_ratio: {time_compression_ratio}.")
+                raise ValueError(
+                    f"Unsupported time_compression_ratio: {time_compression_ratio}."
+                )
 
             downsample_stride_HW = (2, 2) if add_spatial_downsample else (1, 1)
             downsample_stride_T = (2,) if add_time_downsample else (1,)
@@ -112,11 +117,15 @@ class EncoderCausal3D(nn.Module):
         )
 
         # out
-        self.conv_norm_out = nn.GroupNorm(num_channels=block_out_channels[-1], num_groups=norm_num_groups, eps=1e-6)
+        self.conv_norm_out = nn.GroupNorm(
+            num_channels=block_out_channels[-1], num_groups=norm_num_groups, eps=1e-6
+        )
         self.conv_act = nn.SiLU()
 
         conv_out_channels = 2 * out_channels if double_z else out_channels
-        self.conv_out = CausalConv3d(block_out_channels[-1], conv_out_channels, kernel_size=3)
+        self.conv_out = CausalConv3d(
+            block_out_channels[-1], conv_out_channels, kernel_size=3
+        )
 
     def prepare_attention_mask(self, hidden_states: torch.Tensor) -> torch.Tensor:
         B, C, T, H, W = hidden_states.shape
@@ -171,7 +180,9 @@ class DecoderCausal3D(nn.Module):
         super().__init__()
         self.layers_per_block = layers_per_block
 
-        self.conv_in = CausalConv3d(in_channels, block_out_channels[-1], kernel_size=3, stride=1)
+        self.conv_in = CausalConv3d(
+            in_channels, block_out_channels[-1], kernel_size=3, stride=1
+        )
         self.mid_block = None
         self.up_blocks = nn.ModuleList([])
 
@@ -199,17 +210,22 @@ class DecoderCausal3D(nn.Module):
             if time_compression_ratio == 4:
                 add_spatial_upsample = bool(i < num_spatial_upsample_layers)
                 add_time_upsample = bool(
-                    i >= len(block_out_channels) - 1 - num_time_upsample_layers and not is_final_block
+                    i >= len(block_out_channels) - 1 - num_time_upsample_layers
+                    and not is_final_block
                 )
             elif time_compression_ratio == 8:
                 add_spatial_upsample = bool(i < num_spatial_upsample_layers)
                 add_time_upsample = bool(i < num_spatial_upsample_layers)
             else:
-                raise ValueError(f"Unsupported time_compression_ratio: {time_compression_ratio}.")
+                raise ValueError(
+                    f"Unsupported time_compression_ratio: {time_compression_ratio}."
+                )
 
             upsample_scale_factor_HW = (2, 2) if add_spatial_upsample else (1, 1)
             upsample_scale_factor_T = (2,) if add_time_upsample else (1,)
-            upsample_scale_factor = tuple(upsample_scale_factor_T + upsample_scale_factor_HW)
+            upsample_scale_factor = tuple(
+                upsample_scale_factor_T + upsample_scale_factor_HW
+            )
             up_block = UpDecoderBlockCausal3D(
                 num_layers=self.layers_per_block + 1,
                 in_channels=prev_output_channel,
@@ -226,7 +242,9 @@ class DecoderCausal3D(nn.Module):
             self.up_blocks.append(up_block)
             prev_output_channel = output_channel
 
-        self.conv_norm_out = nn.GroupNorm(num_channels=block_out_channels[0], num_groups=norm_num_groups, eps=1e-6)
+        self.conv_norm_out = nn.GroupNorm(
+            num_channels=block_out_channels[0], num_groups=norm_num_groups, eps=1e-6
+        )
         self.conv_act = nn.SiLU()
         self.conv_out = CausalConv3d(block_out_channels[0], out_channels, kernel_size=3)
 
@@ -327,7 +345,9 @@ class DiagonalGaussianDistribution(object):
                     dim=reduce_dim,
                 )
 
-    def nll(self, sample: torch.Tensor, dims: Tuple[int, ...] = [1, 2, 3]) -> torch.Tensor:
+    def nll(
+        self, sample: torch.Tensor, dims: Tuple[int, ...] = [1, 2, 3]
+    ) -> torch.Tensor:
         if self.deterministic:
             return torch.Tensor([0.0])
         logtwopi = np.log(2.0 * np.pi)

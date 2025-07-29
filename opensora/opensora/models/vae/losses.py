@@ -1,7 +1,7 @@
 import torch
 import torch.nn.functional as F
 from einops import rearrange
-from torch import Tensor, nn
+from torch import nn
 
 from opensora.models.vae.lpips import LPIPS
 
@@ -15,7 +15,8 @@ def hinge_d_loss(logits_real, logits_fake):
 
 def vanilla_d_loss(logits_real, logits_fake):
     d_loss = 0.5 * (
-        torch.mean(torch.nn.functional.softplus(-logits_real)) + torch.mean(torch.nn.functional.softplus(logits_fake))
+        torch.mean(torch.nn.functional.softplus(-logits_real))
+        + torch.mean(torch.nn.functional.softplus(logits_fake))
     )
     return d_loss
 
@@ -94,7 +95,7 @@ class VAELoss(nn.Module):
     ):
         super().__init__()
 
-        if type(dtype) == str:
+        if type(dtype) is str:
             if dtype == "bf16":
                 dtype = torch.bfloat16
             elif dtype == "fp16":
@@ -183,7 +184,9 @@ class GeneratorLoss(nn.Module):
         else:
             d_weight = torch.tensor(1.0)
 
-        disc_factor = adopt_weight(self.disc_factor, global_step, threshold=self.gen_start)
+        disc_factor = adopt_weight(
+            self.disc_factor, global_step, threshold=self.gen_start
+        )
         weighted_gen_loss = d_weight * disc_factor * g_loss
 
         return weighted_gen_loss, g_loss
@@ -214,7 +217,9 @@ class DiscriminatorLoss(nn.Module):
         global_step,
     ):
         if self.disc_factor is not None and self.disc_factor > 0.0:
-            disc_factor = adopt_weight(self.disc_factor, global_step, threshold=self.disc_start)
+            disc_factor = adopt_weight(
+                self.disc_factor, global_step, threshold=self.disc_start
+            )
             disc_loss = self.loss_fn(real_logits, fake_logits)
             weighted_discriminator_loss = disc_factor * disc_loss
         else:

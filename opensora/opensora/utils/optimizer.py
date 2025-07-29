@@ -60,7 +60,9 @@ def create_lr_scheduler(
             warmup_steps=warmup_steps,
         )
     else:
-        lr_scheduler = LinearWarmupLR(optimizer, initial_lr=1e-6, warmup_steps=warmup_steps)
+        lr_scheduler = LinearWarmupLR(
+            optimizer, initial_lr=1e-6, warmup_steps=warmup_steps
+        )
         # lr_scheduler = LinearWarmupLR(optimizer, warmup_steps=warmup_steps)
 
     return lr_scheduler
@@ -76,7 +78,9 @@ class LinearWarmupLR(_LRScheduler):
             the schedule is started from the beginning or When last_step=-1, sets initial lr as lr.
     """
 
-    def __init__(self, optimizer, initial_lr=0, warmup_steps: int = 0, last_epoch: int = -1):
+    def __init__(
+        self, optimizer, initial_lr=0, warmup_steps: int = 0, last_epoch: int = -1
+    ):
         self.initial_lr = initial_lr
         self.warmup_steps = warmup_steps
         super().__init__(optimizer, last_epoch=last_epoch)
@@ -84,7 +88,10 @@ class LinearWarmupLR(_LRScheduler):
     def get_lr(self):
         if self.last_epoch < self.warmup_steps:
             return [
-                self.initial_lr + (self.last_epoch + 1) / (self.warmup_steps + 1) * (lr - self.initial_lr)
+                self.initial_lr
+                + (self.last_epoch + 1)
+                / (self.warmup_steps + 1)
+                * (lr - self.initial_lr)
                 for lr in self.base_lrs
             ]
         else:

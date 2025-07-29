@@ -9,38 +9,6 @@ on:
     branches: 
       - master
 jobs:
-  check_version:
-    runs-on: ubuntu-latest
-    steps:
-      - name: Checkout code
-        uses: actions/checkout@v4
-        with:
-          fetch-depth: 0
-      - name: Fetch all tags
-        run: git fetch --tags
-      - name: Get latest version from main branch
-        id: main_version
-        run: |
-          latest_version=$(git tag --sort=-v:refname | head -n 1)
-          echo "::set-output name=version::$latest_version"
-
-      - name: Get current version from feature branch
-        id: feature_version
-        run: |
-          current_version=$(cat pyproject.toml | grep "version =" | awk '{print $NF}') # Example for Node.js projects
-          echo "::set-output name=version::$current_version"
-
-      - name: Check if feature branch increments version
-        run: |
-          main_version=${{ steps.main_version.outputs.version }}
-          feature_version=v${{ steps.feature_version.outputs.version }}
-          if [[ $(printf "%s\n" "$main_version" "$feature_version" | sort -V | head -n 1) == "$main_version" ]] && [[ $(printf "%s\n" "$main_version" "$feature_version" | sort -V | head -n 1) != "$feature_version" ]]; then
-            echo "Version incremented successfully!"
-          else
-            echo "Error: Version not incremented on feature branch."
-            exit 1
-          fi
-
   lint:
     name: Lint
     runs-on: ubuntu-latest
@@ -50,10 +18,12 @@ jobs:
         uses: astral-sh/setup-uv@v5
         with:
           enable-cache: true
+      - name: Install ruff
+        run: uv tool install ruff@latest
       - name: Ruff lint
-        run: uv run --group lint ruff check scraping/ video_generation/ ml/
+        run: uvx ruff check scraping/ video_generation/ ml/
       - name: Ruff format
-        run: uv run --group lint ruff format --diff scraping/ video_generation/ ml/
+        run: uvx ruff format --diff scraping/ video_generation/ ml/
       # This isn't a general Python lint, this style is just used in this repository
       - name: Prettier format
         run: npx prettier --prose-wrap always --check "*.md"

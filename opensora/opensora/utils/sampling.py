@@ -213,7 +213,9 @@ class I2VDenoiser(Denoiser):
                 image_gs = torch.linspace(1.0, step_upper_image_gs, t)[
                     None, None, :, None, None
                 ].repeat(b, c, 1, h, w)
-                image_gs = pack(image_gs, patch_size=patch_size).to(cond.device, cond.dtype)
+                image_gs = pack(image_gs, patch_size=patch_size).to(
+                    cond.device, cond.dtype
+                )
 
             # update
             pred = uncond_2 + image_gs * (uncond - uncond_2) + text_gs * (cond - uncond)

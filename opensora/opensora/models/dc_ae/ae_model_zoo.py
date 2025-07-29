@@ -16,10 +16,8 @@
 
 from typing import Callable, Optional
 
-import diffusers
 import torch
 from huggingface_hub import PyTorchModelHubMixin
-from torch import nn
 
 from opensora.registry import MODELS
 from opensora.utils.ckpt import load_checkpoint
@@ -34,7 +32,9 @@ REGISTERED_DCAE_MODEL: dict[str, tuple[Callable, Optional[str]]] = {
 }
 
 
-def create_dc_ae_model_cfg(name: str, pretrained_path: Optional[str] = None) -> DCAEConfig:
+def create_dc_ae_model_cfg(
+    name: str, pretrained_path: Optional[str] = None
+) -> DCAEConfig:
     assert name in REGISTERED_DCAE_MODEL, f"{name} is not supported"
     dc_ae_cls, default_pt_path = REGISTERED_DCAE_MODEL[name]
     pretrained_path = default_pt_path if pretrained_path is None else pretrained_path

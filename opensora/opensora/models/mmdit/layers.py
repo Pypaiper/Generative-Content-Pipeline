@@ -77,7 +77,11 @@ def timestep_embedding(t: Tensor, dim, max_period=10000, time_factor: float = 10
     """
     t = time_factor * t
     half = dim // 2
-    freqs = torch.exp(-math.log(max_period) * torch.arange(start=0, end=half, dtype=torch.float32) / half).to(t.device)
+    freqs = torch.exp(
+        -math.log(max_period)
+        * torch.arange(start=0, end=half, dtype=torch.float32)
+        / half
+    ).to(t.device)
 
     args = t[:, None].float() * freqs[None]
     embedding = torch.cat([torch.cos(args), torch.sin(args)], dim=-1)
@@ -136,7 +140,13 @@ class QKNorm(torch.nn.Module):
 
 
 class SelfAttention(nn.Module):
-    def __init__(self, dim: int, num_heads: int = 8, qkv_bias: bool = False, fused_qkv: bool = True):
+    def __init__(
+        self,
+        dim: int,
+        num_heads: int = 8,
+        qkv_bias: bool = False,
+        fused_qkv: bool = True,
+    ):
         super().__init__()
         self.num_heads = num_heads
         self.fused_qkv = fused_qkv
@@ -184,7 +194,9 @@ class Modulation(nn.Module):
         self.lin = nn.Linear(dim, self.multiplier * dim, bias=True)
 
     def forward(self, vec: Tensor) -> tuple[ModulationOut, ModulationOut | None]:
-        out = self.lin(nn.functional.silu(vec))[:, None, :].chunk(self.multiplier, dim=-1)
+        out = self.lin(nn.functional.silu(vec))[:, None, :].chunk(
+            self.multiplier, dim=-1
+        )
 
         return (
             ModulationOut(*out[:3]),
@@ -193,7 +205,9 @@ class Modulation(nn.Module):
 
 
 class DoubleStreamBlockProcessor:
-    def __call__(self, attn: nn.Module, img: Tensor, txt: Tensor, vec: Tensor, pe: Tensor) -> tuple[Tensor, Tensor]:
+    def __call__(
+        self, attn: nn.Module, img: Tensor, txt: Tensor, vec: Tensor, pe: Tensor
+    ) -> tuple[Tensor, Tensor]:
         # attn is the DoubleStreamBlock;
         # process img and txt separately while both is influenced by text vec
 
@@ -207,13 +221,33 @@ class DoubleStreamBlockProcessor:
 
         if attn.img_attn.fused_qkv:
             img_qkv = attn.img_attn.qkv(img_modulated)
-            img_q, img_k, img_v = rearrange(img_qkv, "B L (K H D) -> K B H L D", K=3, H=attn.num_heads, D=attn.head_dim)
+            img_q, img_k, img_v = rearrange(
+                img_qkv,
+                "B L (K H D) -> K B H L D",
+                K=3,
+                H=attn.num_heads,
+                D=attn.head_dim,
+            )
         else:
-            img_q = rearrange(attn.img_attn.q_proj(img_modulated), "B L (H D) -> B L H D", H=attn.num_heads)
-            img_k = rearrange(attn.img_attn.k_proj(img_modulated), "B L (H D) -> B L H D", H=attn.num_heads)
-            img_v = rearrange(attn.img_attn.v_proj(img_modulated), "B L (H D) -> B L H D", H=attn.num_heads)
+            img_q = rearrange(
+                attn.img_attn.q_proj(img_modulated),
+                "B L (H D) -> B L H D",
+                H=attn.num_heads,
+            )
+            img_k = rearrange(
+                attn.img_attn.k_proj(img_modulated),
+                "B L (H D) -> B L H D",
+                H=attn.num_heads,
+            )
+            img_v = rearrange(
+                attn.img_attn.v_proj(img_modulated),
+                "B L (H D) -> B L H D",
+                H=attn.num_heads,
+            )
 
-        img_q, img_k = attn.img_attn.norm(img_q, img_k, img_v)  # RMSNorm for QK Norm as in SD3 paper
+        img_q, img_k = attn.img_attn.norm(
+            img_q, img_k, img_v
+        )  # RMSNorm for QK Norm as in SD3 paper
         if not attn.img_attn.fused_qkv:
             img_q = rearrange(img_q, "B L H D -> B H L D")
             img_k = rearrange(img_k, "B L H D -> B H L D")
@@ -224,11 +258,29 @@ class DoubleStreamBlockProcessor:
         txt_modulated = (1 + txt_mod1.scale) * txt_modulated + txt_mod1.shift
         if attn.txt_attn.fused_qkv:
             txt_qkv = attn.txt_attn.qkv(txt_modulated)
-            txt_q, txt_k, txt_v = rearrange(txt_qkv, "B L (K H D) -> K B H L D", K=3, H=attn.num_heads, D=attn.head_dim)
+            txt_q, txt_k, txt_v = rearrange(
+                txt_qkv,
+                "B L (K H D) -> K B H L D",
+                K=3,
+                H=attn.num_heads,
+                D=attn.head_dim,
+            )
         else:
-            txt_q = rearrange(attn.txt_attn.q_proj(txt_modulated), "B L (H D) -> B L H D", H=attn.num_heads)
-            txt_k = rearrange(attn.txt_attn.k_proj(txt_modulated), "B L (H D) -> B L H D", H=attn.num_heads)
-            txt_v = rearrange(attn.txt_attn.v_proj(txt_modulated), "B L (H D) -> B L H D", H=attn.num_heads)
+            txt_q = rearrange(
+                attn.txt_attn.q_proj(txt_modulated),
+                "B L (H D) -> B L H D",
+                H=attn.num_heads,
+            )
+            txt_k = rearrange(
+                attn.txt_attn.k_proj(txt_modulated),
+                "B L (H D) -> B L H D",
+                H=attn.num_heads,
+            )
+            txt_v = rearrange(
+                attn.txt_attn.v_proj(txt_modulated),
+                "B L (H D) -> B L H D",
+                H=attn.num_heads,
+            )
         txt_q, txt_k = attn.txt_attn.norm(txt_q, txt_k, txt_v)
         if not attn.txt_attn.fused_qkv:
             txt_q = rearrange(txt_q, "B L H D -> B H L D")
@@ -245,11 +297,15 @@ class DoubleStreamBlockProcessor:
 
         # calculate the img bloks
         img = img + img_mod1.gate * attn.img_attn.proj(img_attn)
-        img = img + img_mod2.gate * attn.img_mlp((1 + img_mod2.scale) * attn.img_norm2(img) + img_mod2.shift)
+        img = img + img_mod2.gate * attn.img_mlp(
+            (1 + img_mod2.scale) * attn.img_norm2(img) + img_mod2.shift
+        )
 
         # calculate the txt bloks
         txt = txt + txt_mod1.gate * attn.txt_attn.proj(txt_attn)
-        txt = txt + txt_mod2.gate * attn.txt_mlp((1 + txt_mod2.scale) * attn.txt_norm2(txt) + txt_mod2.shift)
+        txt = txt + txt_mod2.gate * attn.txt_mlp(
+            (1 + txt_mod2.scale) * attn.txt_norm2(txt) + txt_mod2.shift
+        )
         return img, txt
 
 
@@ -271,7 +327,9 @@ class DoubleStreamBlock(nn.Module):
         # image stream
         self.img_mod = Modulation(hidden_size, double=True)
         self.img_norm1 = nn.LayerNorm(hidden_size, elementwise_affine=False, eps=1e-6)
-        self.img_attn = SelfAttention(dim=hidden_size, num_heads=num_heads, qkv_bias=qkv_bias, fused_qkv=fused_qkv)
+        self.img_attn = SelfAttention(
+            dim=hidden_size, num_heads=num_heads, qkv_bias=qkv_bias, fused_qkv=fused_qkv
+        )
 
         self.img_norm2 = nn.LayerNorm(hidden_size, elementwise_affine=False, eps=1e-6)
         self.img_mlp = nn.Sequential(
@@ -283,7 +341,9 @@ class DoubleStreamBlock(nn.Module):
         # text stream
         self.txt_mod = Modulation(hidden_size, double=True)
         self.txt_norm1 = nn.LayerNorm(hidden_size, elementwise_affine=False, eps=1e-6)
-        self.txt_attn = SelfAttention(dim=hidden_size, num_heads=num_heads, qkv_bias=qkv_bias, fused_qkv=fused_qkv)
+        self.txt_attn = SelfAttention(
+            dim=hidden_size, num_heads=num_heads, qkv_bias=qkv_bias, fused_qkv=fused_qkv
+        )
 
         self.txt_norm2 = nn.LayerNorm(hidden_size, elementwise_affine=False, eps=1e-6)
         self.txt_mlp = nn.Sequential(
@@ -302,7 +362,9 @@ class DoubleStreamBlock(nn.Module):
     def get_processor(self):
         return self.processor
 
-    def forward(self, img: Tensor, txt: Tensor, vec: Tensor, pe: Tensor, **kwargs) -> tuple[Tensor, Tensor]:
+    def forward(
+        self, img: Tensor, txt: Tensor, vec: Tensor, pe: Tensor, **kwargs
+    ) -> tuple[Tensor, Tensor]:
         return self.processor(self, img, txt, vec, pe)
 
 
@@ -311,12 +373,16 @@ class SingleStreamBlockProcessor:
         mod, _ = attn.modulation(vec)
         x_mod = (1 + mod.scale) * attn.pre_norm(x) + mod.shift
         if attn.fused_qkv:
-            qkv, mlp = torch.split(attn.linear1(x_mod), [3 * attn.hidden_size, attn.mlp_hidden_dim], dim=-1)
+            qkv, mlp = torch.split(
+                attn.linear1(x_mod), [3 * attn.hidden_size, attn.mlp_hidden_dim], dim=-1
+            )
             q, k, v = rearrange(qkv, "B L (K H D) -> K B H L D", K=3, H=attn.num_heads)
         else:
             q = rearrange(attn.q_proj(x_mod), "B L (H D) -> B L H D", H=attn.num_heads)
             k = rearrange(attn.k_proj(x_mod), "B L (H D) -> B L H D", H=attn.num_heads)
-            v, mlp = torch.split(attn.v_mlp(x_mod), [attn.hidden_size, attn.mlp_hidden_dim], dim=-1)
+            v, mlp = torch.split(
+                attn.v_mlp(x_mod), [attn.hidden_size, attn.mlp_hidden_dim], dim=-1
+            )
             v = rearrange(v, "B L (H D) -> B L H D", H=attn.num_heads)
 
         q, k = attn.norm(q, k, v)
@@ -392,8 +458,12 @@ class LastLayer(nn.Module):
     def __init__(self, hidden_size: int, patch_size: int, out_channels: int):
         super().__init__()
         self.norm_final = nn.LayerNorm(hidden_size, elementwise_affine=False, eps=1e-6)
-        self.linear = nn.Linear(hidden_size, patch_size * patch_size * out_channels, bias=True)
-        self.adaLN_modulation = nn.Sequential(nn.SiLU(), nn.Linear(hidden_size, 2 * hidden_size, bias=True))
+        self.linear = nn.Linear(
+            hidden_size, patch_size * patch_size * out_channels, bias=True
+        )
+        self.adaLN_modulation = nn.Sequential(
+            nn.SiLU(), nn.Linear(hidden_size, 2 * hidden_size, bias=True)
+        )
 
     def forward(self, x: Tensor, vec: Tensor) -> Tensor:
         shift, scale = self.adaLN_modulation(vec).chunk(2, dim=1)

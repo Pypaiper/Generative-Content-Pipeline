@@ -4,27 +4,31 @@ from typing import Dict, List, Optional, Tuple, Union
 import torch
 import torch.distributed as dist
 import torch.nn as nn
-from colossalai.shardformer.layer import (FusedLinear1D_Col, FusedLinear1D_Row,
-                                          Linear1D_Col, Linear1D_Row)
+from colossalai.shardformer.layer import (
+    FusedLinear1D_Col,
+    FusedLinear1D_Row,
+    Linear1D_Col,
+    Linear1D_Row,
+)
 from colossalai.shardformer.layer._operation import all_to_all_comm
 from colossalai.shardformer.layer.attn import RingComm, _rescale_out_lse
 from colossalai.shardformer.layer.utils import is_share_sp_tp
 from colossalai.shardformer.policies.base_policy import (
-    ModulePolicyDescription, Policy, SubModuleReplacementDescription)
+    ModulePolicyDescription,
+    Policy,
+    SubModuleReplacementDescription,
+)
 from colossalai.shardformer.shard import ShardConfig
 from einops import rearrange
-from flash_attn.flash_attn_interface import (_flash_attn_backward,
-                                             _flash_attn_forward)
+from flash_attn.flash_attn_interface import _flash_attn_backward, _flash_attn_forward
 from liger_kernel.ops.rope import LigerRopeFunction
 
 try:
-    from flash_attn_interface import \
-        _flash_attn_backward as _flash_attn_backward_v3
-    from flash_attn_interface import \
-        _flash_attn_forward as _flash_attn_forward_v3
+    from flash_attn_interface import _flash_attn_backward as _flash_attn_backward_v3
+    from flash_attn_interface import _flash_attn_forward as _flash_attn_forward_v3
 
     SUPPORT_FA3 = True
-except:
+except ImportError:
     SUPPORT_FA3 = False
 
 from torch import Tensor
@@ -64,12 +68,17 @@ class _SplitForwardGatherBackwardVarLen(torch.autograd.Function):
         shapes = [list(grad_output.shape) for _ in range(world_size)]
         for i, shape in enumerate(shapes):
             shape[ctx.dim] = ctx.splits[i]
-        tensor_list = [torch.empty(shape, dtype=grad_output.dtype, device=grad_output.device) for shape in shapes]
+        tensor_list = [
+            torch.empty(shape, dtype=grad_output.dtype, device=grad_output.device)
+            for shape in shapes
+        ]
         dist.all_gather(tensor_list, grad_output, group=ctx.process_group)
         return torch.cat(tensor_list, dim=ctx.dim), None, None, None
 
 
-def split_forward_gather_backward_var_len(input_, dim, process_group, splits: List[int]):
+def split_forward_gather_backward_var_len(
+    input_, dim, process_group, splits: List[int]
+):
     return _SplitForwardGatherBackwardVarLen.apply(input_, dim, process_group, splits)
 
 
@@ -97,7 +106,10 @@ class _GatherForwardSplitBackwardVarLen(torch.autograd.Function):
         shapes = [list(input_.shape) for _ in range(world_size)]
         for i, shape in enumerate(shapes):
             shape[dim] = splits[i]
-        tensor_list = [torch.empty(shape, dtype=input_.dtype, device=input_.device) for shape in shapes]
+        tensor_list = [
+            torch.empty(shape, dtype=input_.dtype, device=input_.device)
+            for shape in shapes
+        ]
         dist.all_gather(tensor_list, input_, group=ctx.process_group)
         return torch.cat(tensor_list, dim=dim)
 
@@ -105,15 +117,26 @@ class _GatherForwardSplitBackwardVarLen(torch.autograd.Function):
     def backward(ctx, grad_output):
         grad_output = grad_output * ctx.grad_scale
         rank = dist.get_rank(ctx.process_group)
-        return torch.split(grad_output, ctx.splits, dim=ctx.dim)[rank].clone(), None, None, None
+        return (
+            torch.split(grad_output, ctx.splits, dim=ctx.dim)[rank].clone(),
+            None,
+            None,
+            None,
+        )
 
 
-def gather_forward_split_backward_var_len(input_, dim, process_group, splits: List[int]):
+def gather_forward_split_backward_var_len(
+    input_, dim, process_group, splits: List[int]
+):
     return _GatherForwardSplitBackwardVarLen.apply(input_, dim, process_group, splits)
 
 
 def _fa_forward(
-    q: torch.Tensor, k: torch.Tensor, v: torch.Tensor, dropout_p: float = 0.0, softmax_scale: Optional[float] = None
+    q: torch.Tensor,
+    k: torch.Tensor,
+    v: torch.Tensor,
+    dropout_p: float = 0.0,
+    softmax_scale: Optional[float] = None,
 ) -> Tuple[torch.Tensor, torch.Tensor, torch.Tensor]:
     if SUPPORT_FA3:
         out, softmax_lse, *_ = _flash_attn_forward_v3(
@@ -184,7 +207,12 @@ def _fa_backward(
             v,
             out,
             softmax_lse,
-            None, None, None, None, None, None,
+            None,
+            None,
+            None,
+            None,
+            None,
+            None,
             dq,
             dk,
             dv,
@@ -262,7 +290,10 @@ class RingAttention(torch.autograd.Function):
         out = None
         block_out = [None, None]
         softmax_lse = [None, None]
-        block_softmax_lse = [None, None]  # log sum exp, the denominator of softmax in attention
+        block_softmax_lse = [
+            None,
+            None,
+        ]  # log sum exp, the denominator of softmax in attention
         rng_states = [None for _ in range(sp_size)]
         sp_streams = [torch.cuda.current_stream(), sp_stream]
 
@@ -291,16 +322,24 @@ class RingAttention(torch.autograd.Function):
                 # to minimize idle time when comm takes longer than attn.
                 _kv_comm(i + 1)
                 block_softmax_lse[i % 2] = (
-                    block_softmax_lse[i % 2].transpose(1, 2).unsqueeze(-1).contiguous().float()
+                    block_softmax_lse[i % 2]
+                    .transpose(1, 2)
+                    .unsqueeze(-1)
+                    .contiguous()
+                    .float()
                 )  # [B, N, S] -> [B, S, N, 1]
-                assert block_out[i % 2].shape[:-1] == block_softmax_lse[i % 2].shape[:-1]
+                assert (
+                    block_out[i % 2].shape[:-1] == block_softmax_lse[i % 2].shape[:-1]
+                )
                 # Output and log sum exp correction. Ideally overlap this with the next flash attn kernel.
                 # In reality this always finishes before next flash attn; no need for extra sync.
                 if i == 0:
                     out = block_out[0]
                     softmax_lse = block_softmax_lse[0]
                 else:
-                    out, softmax_lse = _rescale_out_lse(out, block_out[i % 2], softmax_lse, block_softmax_lse[i % 2])
+                    out, softmax_lse = _rescale_out_lse(
+                        out, block_out[i % 2], softmax_lse, block_softmax_lse[i % 2]
+                    )
         torch.cuda.current_stream().wait_stream(sp_stream)
         out = out.to(q.dtype)
         softmax_lse = softmax_lse.squeeze(-1).transpose(1, 2).contiguous()
@@ -370,7 +409,25 @@ class RingAttention(torch.autograd.Function):
 
         dq, dk, dv = [x.to(q.dtype) for x in (dq, *dkv)]
 
-        return dq, dk, dv, None, None, None, None, None, None, None, None, None, None, None, None, None, None
+        return (
+            dq,
+            dk,
+            dv,
+            None,
+            None,
+            None,
+            None,
+            None,
+            None,
+            None,
+            None,
+            None,
+            None,
+            None,
+            None,
+            None,
+            None,
+        )
 
     @staticmethod
     def attention(
@@ -403,14 +460,23 @@ class RingAttention(torch.autograd.Function):
         if RingAttention.SP_STREAM is None:
             RingAttention.SP_STREAM = torch.cuda.Stream()
         out, softmax_lse = RingAttention.apply(
-            q, k, v, sp_group, RingAttention.SP_STREAM, dropout_p, softmax_scale, deterministic
+            q,
+            k,
+            v,
+            sp_group,
+            RingAttention.SP_STREAM,
+            dropout_p,
+            softmax_scale,
+            deterministic,
         )
         if return_softmax:
             return out, softmax_lse
         return out
 
 
-def ring_attention(q: Tensor, k: Tensor, v: Tensor, pe: Tensor, sp_group: dist.ProcessGroup) -> Tensor:
+def ring_attention(
+    q: Tensor, k: Tensor, v: Tensor, pe: Tensor, sp_group: dist.ProcessGroup
+) -> Tensor:
     if isinstance(pe, torch.Tensor):
         q, k = apply_rope(q, k, pe)
     else:
@@ -437,11 +503,29 @@ class DistributedDoubleStreamBlockProcessor:
         img_modulated = (1 + img_mod1.scale) * img_modulated + img_mod1.shift
         if attn.img_attn.fused_qkv:
             img_qkv = attn.img_attn.qkv(img_modulated)
-            img_q, img_k, img_v = rearrange(img_qkv, "B L (K H D) -> K B H L D", K=3, H=attn.num_heads, D=attn.head_dim)
+            img_q, img_k, img_v = rearrange(
+                img_qkv,
+                "B L (K H D) -> K B H L D",
+                K=3,
+                H=attn.num_heads,
+                D=attn.head_dim,
+            )
         else:
-            img_q = rearrange(attn.img_attn.q_proj(img_modulated), "B L (H D) -> B L H D", H=attn.num_heads)
-            img_k = rearrange(attn.img_attn.k_proj(img_modulated), "B L (H D) -> B L H D", H=attn.num_heads)
-            img_v = rearrange(attn.img_attn.v_proj(img_modulated), "B L (H D) -> B L H D", H=attn.num_heads)
+            img_q = rearrange(
+                attn.img_attn.q_proj(img_modulated),
+                "B L (H D) -> B L H D",
+                H=attn.num_heads,
+            )
+            img_k = rearrange(
+                attn.img_attn.k_proj(img_modulated),
+                "B L (H D) -> B L H D",
+                H=attn.num_heads,
+            )
+            img_v = rearrange(
+                attn.img_attn.v_proj(img_modulated),
+                "B L (H D) -> B L H D",
+                H=attn.num_heads,
+            )
         img_q, img_k = attn.img_attn.norm(img_q, img_k, img_v)
         if not attn.img_attn.fused_qkv:
             img_q = rearrange(img_q, "B L H D -> B H L D")
@@ -453,11 +537,29 @@ class DistributedDoubleStreamBlockProcessor:
         txt_modulated = (1 + txt_mod1.scale) * txt_modulated + txt_mod1.shift
         if attn.txt_attn.fused_qkv:
             txt_qkv = attn.txt_attn.qkv(txt_modulated)
-            txt_q, txt_k, txt_v = rearrange(txt_qkv, "B L (K H D) -> K B H L D", K=3, H=attn.num_heads, D=attn.head_dim)
+            txt_q, txt_k, txt_v = rearrange(
+                txt_qkv,
+                "B L (K H D) -> K B H L D",
+                K=3,
+                H=attn.num_heads,
+                D=attn.head_dim,
+            )
         else:
-            txt_q = rearrange(attn.txt_attn.q_proj(txt_modulated), "B L (H D) -> B L H D", H=attn.num_heads)
-            txt_k = rearrange(attn.txt_attn.k_proj(txt_modulated), "B L (H D) -> B L H D", H=attn.num_heads)
-            txt_v = rearrange(attn.txt_attn.v_proj(txt_modulated), "B L (H D) -> B L H D", H=attn.num_heads)
+            txt_q = rearrange(
+                attn.txt_attn.q_proj(txt_modulated),
+                "B L (H D) -> B L H D",
+                H=attn.num_heads,
+            )
+            txt_k = rearrange(
+                attn.txt_attn.k_proj(txt_modulated),
+                "B L (H D) -> B L H D",
+                H=attn.num_heads,
+            )
+            txt_v = rearrange(
+                attn.txt_attn.v_proj(txt_modulated),
+                "B L (H D) -> B L H D",
+                H=attn.num_heads,
+            )
         txt_q, txt_k = attn.txt_attn.norm(txt_q, txt_k, txt_v)
         if not attn.txt_attn.fused_qkv:
             txt_q = rearrange(txt_q, "B L H D -> B H L D")
@@ -474,16 +576,36 @@ class DistributedDoubleStreamBlockProcessor:
             self.shard_config.enable_sequence_parallelism
             and self.shard_config.sequence_parallelism_mode == "all_to_all"
         ):
-            assert (
-                attn.num_heads % self.shard_config.sequence_parallel_size == 0
-            ), f"Expected num heads({attn.num_heads}) % sp size({self.shard_config.sequence_parallel_size}) == 0"
+            assert attn.num_heads % self.shard_config.sequence_parallel_size == 0, (
+                f"Expected num heads({attn.num_heads}) % sp size({self.shard_config.sequence_parallel_size}) == 0"
+            )
             # TODO: overlap the communication with computation
-            q = all_to_all_comm(q, self.shard_config.sequence_parallel_process_group, scatter_dim=1, gather_dim=2)
-            k = all_to_all_comm(k, self.shard_config.sequence_parallel_process_group, scatter_dim=1, gather_dim=2)
-            v = all_to_all_comm(v, self.shard_config.sequence_parallel_process_group, scatter_dim=1, gather_dim=2)
+            q = all_to_all_comm(
+                q,
+                self.shard_config.sequence_parallel_process_group,
+                scatter_dim=1,
+                gather_dim=2,
+            )
+            k = all_to_all_comm(
+                k,
+                self.shard_config.sequence_parallel_process_group,
+                scatter_dim=1,
+                gather_dim=2,
+            )
+            v = all_to_all_comm(
+                v,
+                self.shard_config.sequence_parallel_process_group,
+                scatter_dim=1,
+                gather_dim=2,
+            )
 
-        if self.shard_config.enable_sequence_parallelism and self.shard_config.sequence_parallelism_mode == "ring_attn":
-            attn1 = ring_attention(q, k, v, pe, self.shard_config.sequence_parallel_process_group)
+        if (
+            self.shard_config.enable_sequence_parallelism
+            and self.shard_config.sequence_parallelism_mode == "ring_attn"
+        ):
+            attn1 = ring_attention(
+                q, k, v, pe, self.shard_config.sequence_parallel_process_group
+            )
         else:
             attn1 = attention(q, k, v, pe=pe)
         if (
@@ -491,17 +613,24 @@ class DistributedDoubleStreamBlockProcessor:
             and self.shard_config.sequence_parallelism_mode == "all_to_all"
         ):
             attn1 = all_to_all_comm(
-                attn1, self.shard_config.sequence_parallel_process_group, scatter_dim=1, gather_dim=2
+                attn1,
+                self.shard_config.sequence_parallel_process_group,
+                scatter_dim=1,
+                gather_dim=2,
             )
         txt_attn, img_attn = attn1[:, :txt_len], attn1[:, txt_len:]
 
         # calculate the img bloks
         img = img + img_mod1.gate * attn.img_attn.proj(img_attn)
-        img = img + img_mod2.gate * attn.img_mlp((1 + img_mod2.scale) * attn.img_norm2(img) + img_mod2.shift)
+        img = img + img_mod2.gate * attn.img_mlp(
+            (1 + img_mod2.scale) * attn.img_norm2(img) + img_mod2.shift
+        )
 
         # calculate the txt bloks
         txt = txt + txt_mod1.gate * attn.txt_attn.proj(txt_attn)
-        txt = txt + txt_mod2.gate * attn.txt_mlp((1 + txt_mod2.scale) * attn.txt_norm2(txt) + txt_mod2.shift)
+        txt = txt + txt_mod2.gate * attn.txt_mlp(
+            (1 + txt_mod2.scale) * attn.txt_norm2(txt) + txt_mod2.shift
+        )
         return img, txt
 
 
@@ -509,17 +638,23 @@ class DistributedSingleStreamBlockProcessor:
     def __init__(self, shard_config: ShardConfig) -> None:
         self.shard_config = shard_config
 
-    def __call__(self, attn: SingleStreamBlock, x: Tensor, vec: Tensor, pe: Tensor) -> Tensor:
+    def __call__(
+        self, attn: SingleStreamBlock, x: Tensor, vec: Tensor, pe: Tensor
+    ) -> Tensor:
         mod, _ = attn.modulation(vec)
         x_mod = (1 + mod.scale) * attn.pre_norm(x) + mod.shift
 
         if attn.fused_qkv:
-            qkv, mlp = torch.split(attn.linear1(x_mod), [3 * attn.hidden_size, attn.mlp_hidden_dim], dim=-1)
+            qkv, mlp = torch.split(
+                attn.linear1(x_mod), [3 * attn.hidden_size, attn.mlp_hidden_dim], dim=-1
+            )
             q, k, v = rearrange(qkv, "B L (K H D) -> K B H L D", K=3, H=attn.num_heads)
         else:
             q = rearrange(attn.q_proj(x_mod), "B L (H D) -> B L H D", H=attn.num_heads)
             k = rearrange(attn.k_proj(x_mod), "B L (H D) -> B L H D", H=attn.num_heads)
-            v, mlp = torch.split(attn.v_mlp(x_mod), [attn.hidden_size, attn.mlp_hidden_dim], dim=-1)
+            v, mlp = torch.split(
+                attn.v_mlp(x_mod), [attn.hidden_size, attn.mlp_hidden_dim], dim=-1
+            )
             v = rearrange(v, "B L (H D) -> B L H D", H=attn.num_heads)
         q, k = attn.norm(q, k, v)
         if not attn.fused_qkv:
@@ -531,16 +666,36 @@ class DistributedSingleStreamBlockProcessor:
             self.shard_config.enable_sequence_parallelism
             and self.shard_config.sequence_parallelism_mode == "all_to_all"
         ):
-            assert (
-                attn.num_heads % self.shard_config.sequence_parallel_size == 0
-            ), f"Expected num heads({attn.num_heads}) % sp size({self.shard_config.sequence_parallel_size}) == 0"
-            q = all_to_all_comm(q, self.shard_config.sequence_parallel_process_group, scatter_dim=1, gather_dim=2)
-            k = all_to_all_comm(k, self.shard_config.sequence_parallel_process_group, scatter_dim=1, gather_dim=2)
-            v = all_to_all_comm(v, self.shard_config.sequence_parallel_process_group, scatter_dim=1, gather_dim=2)
+            assert attn.num_heads % self.shard_config.sequence_parallel_size == 0, (
+                f"Expected num heads({attn.num_heads}) % sp size({self.shard_config.sequence_parallel_size}) == 0"
+            )
+            q = all_to_all_comm(
+                q,
+                self.shard_config.sequence_parallel_process_group,
+                scatter_dim=1,
+                gather_dim=2,
+            )
+            k = all_to_all_comm(
+                k,
+                self.shard_config.sequence_parallel_process_group,
+                scatter_dim=1,
+                gather_dim=2,
+            )
+            v = all_to_all_comm(
+                v,
+                self.shard_config.sequence_parallel_process_group,
+                scatter_dim=1,
+                gather_dim=2,
+            )
 
         # compute attention
-        if self.shard_config.enable_sequence_parallelism and self.shard_config.sequence_parallelism_mode == "ring_attn":
-            attn_1 = ring_attention(q, k, v, pe, self.shard_config.sequence_parallel_process_group)
+        if (
+            self.shard_config.enable_sequence_parallelism
+            and self.shard_config.sequence_parallelism_mode == "ring_attn"
+        ):
+            attn_1 = ring_attention(
+                q, k, v, pe, self.shard_config.sequence_parallel_process_group
+            )
         else:
             attn_1 = attention(q, k, v, pe=pe)
 
@@ -549,7 +704,10 @@ class DistributedSingleStreamBlockProcessor:
             and self.shard_config.sequence_parallelism_mode == "all_to_all"
         ):
             attn_1 = all_to_all_comm(
-                attn_1, self.shard_config.sequence_parallel_process_group, scatter_dim=1, gather_dim=2
+                attn_1,
+                self.shard_config.sequence_parallel_process_group,
+                scatter_dim=1,
+                gather_dim=2,
             )
 
         # compute activation in mlp stream, cat again and run second linear layer
@@ -596,20 +754,27 @@ def mmdit_model_forward(
     **kwargs,
 ):
     txt_len = txt.shape[1]
-    if shard_config.pipeline_stage_manager is None or shard_config.pipeline_stage_manager.is_first_stage():
-        img, txt, vec, pe = self.prepare_block_inputs(img, img_ids, txt, txt_ids, timesteps, y_vec, cond, guidance)
+    if (
+        shard_config.pipeline_stage_manager is None
+        or shard_config.pipeline_stage_manager.is_first_stage()
+    ):
+        img, txt, vec, pe = self.prepare_block_inputs(
+            img, img_ids, txt, txt_ids, timesteps, y_vec, cond, guidance
+        )
         has_grad = img.grad_fn is not None
         old_sequence_parallelism = shard_config.enable_sequence_parallelism
         if shard_config.enable_sequence_parallelism:
             assert (
                 txt.shape[1] + img.shape[1]
             ) % shard_config.sequence_parallel_size == 0, (
-                f"Expected {txt.shape[1] +img.shape[1]} % {shard_config.sequence_parallel_size} == 0"
+                f"Expected {txt.shape[1] + img.shape[1]} % {shard_config.sequence_parallel_size} == 0"
             )
             mask = torch.zeros(txt.shape[1] + img.shape[1], dtype=bool)
             mask[txt.shape[1] :] = 1
             mask_chunks = mask.chunk(shard_config.sequence_parallel_size)
-            cur_mask = mask_chunks[dist.get_rank(shard_config.sequence_parallel_process_group)]
+            cur_mask = mask_chunks[
+                dist.get_rank(shard_config.sequence_parallel_process_group)
+            ]
             txt_splits = [len(c) - c.sum().item() for c in mask_chunks]
             img_splits = [c.sum().item() for c in mask_chunks]
             if 0 in img_splits:
@@ -624,13 +789,21 @@ def mmdit_model_forward(
                 )
                 if shard_config.sequence_parallelism_mode == "ring_attn":
                     # pe does not require grad
-                    sp_rank = dist.get_rank(shard_config.sequence_parallel_process_group)
+                    sp_rank = dist.get_rank(
+                        shard_config.sequence_parallel_process_group
+                    )
                     if isinstance(pe, torch.Tensor):
-                        pe = pe.chunk(shard_config.sequence_parallel_size, dim=2)[sp_rank].clone()
+                        pe = pe.chunk(shard_config.sequence_parallel_size, dim=2)[
+                            sp_rank
+                        ].clone()
                     else:
                         cos, sin = pe
-                        cos = cos.chunk(shard_config.sequence_parallel_size, dim=1)[sp_rank].clone()
-                        sin = sin.chunk(shard_config.sequence_parallel_size, dim=1)[sp_rank].clone()
+                        cos = cos.chunk(shard_config.sequence_parallel_size, dim=1)[
+                            sp_rank
+                        ].clone()
+                        sin = sin.chunk(shard_config.sequence_parallel_size, dim=1)[
+                            sp_rank
+                        ].clone()
                         pe = (cos, sin)
     else:
         img, txt, vec, pe = internal_img, internal_txt, internal_vec, internal_pe
@@ -643,7 +816,9 @@ def mmdit_model_forward(
     for block in self.double_blocks[double_start:double_end]:
         img, txt = auto_grad_checkpoint(block, img, txt, vec, pe)
 
-    if shard_config.pipeline_stage_manager is not None and stage_index[1] <= len(self.double_blocks):
+    if shard_config.pipeline_stage_manager is not None and stage_index[1] <= len(
+        self.double_blocks
+    ):
         return {
             "internal_img": img,
             "internal_txt": txt,
@@ -661,7 +836,9 @@ def mmdit_model_forward(
     for block in self.single_blocks[single_start:single_end]:
         img = auto_grad_checkpoint(block, img, vec, pe)
 
-    if shard_config.pipeline_stage_manager is not None and single_end < len(self.single_blocks):
+    if shard_config.pipeline_stage_manager is not None and single_end < len(
+        self.single_blocks
+    ):
         return {
             "internal_img": img,
             "internal_pe": pe,
@@ -676,7 +853,9 @@ def mmdit_model_forward(
     img = self.final_layer(img, vec)  # (N, T, patch_size ** 2 * out_channels)
 
     if shard_config.enable_sequence_parallelism:
-        img = gather_forward_split_backward_var_len(img, 1, shard_config.sequence_parallel_process_group, img_splits)
+        img = gather_forward_split_backward_var_len(
+            img, 1, shard_config.sequence_parallel_process_group, img_splits
+        )
 
     if not has_grad:
         shard_config.enable_sequence_parallelism = old_sequence_parallelism
@@ -688,7 +867,9 @@ class MMDiTPolicy(Policy):
         if self.shard_config.enable_sequence_parallelism and is_share_sp_tp(
             self.shard_config.sequence_parallelism_mode
         ):
-            assert self.shard_config.enable_tensor_parallelism, "Tensor parallelism should be enabled"
+            assert self.shard_config.enable_tensor_parallelism, (
+                "Tensor parallelism should be enabled"
+            )
 
     def preprocess(self) -> nn.Module:
         return self.model
@@ -701,31 +882,50 @@ class MMDiTPolicy(Policy):
 
     def module_policy(self) -> Dict[Union[str, nn.Module], ModulePolicyDescription]:
         policy = {
-            DoubleStreamBlock: ModulePolicyDescription(attribute_replacement={}, sub_module_replacement=[]),
-            SingleStreamBlock: ModulePolicyDescription(attribute_replacement={}, sub_module_replacement=[]),
+            DoubleStreamBlock: ModulePolicyDescription(
+                attribute_replacement={}, sub_module_replacement=[]
+            ),
+            SingleStreamBlock: ModulePolicyDescription(
+                attribute_replacement={}, sub_module_replacement=[]
+            ),
         }
 
         if self.shard_config.enable_sequence_parallelism:
             if not is_share_sp_tp(self.shard_config.sequence_parallelism_mode):
-                policy[DoubleStreamBlock].attribute_replacement["processor"] = DistributedDoubleStreamBlockProcessor(
-                    self.shard_config
+                policy[DoubleStreamBlock].attribute_replacement["processor"] = (
+                    DistributedDoubleStreamBlockProcessor(self.shard_config)
                 )
-                policy[SingleStreamBlock].attribute_replacement["processor"] = DistributedSingleStreamBlockProcessor(
-                    self.shard_config
+                policy[SingleStreamBlock].attribute_replacement["processor"] = (
+                    DistributedSingleStreamBlockProcessor(self.shard_config)
                 )
-        if self.shard_config.enable_sequence_parallelism or self.shard_config.pipeline_stage_manager is not None:
+        if (
+            self.shard_config.enable_sequence_parallelism
+            or self.shard_config.pipeline_stage_manager is not None
+        ):
             fwd_fn = partial(mmdit_model_forward, shard_config=self.shard_config)
             if self.shard_config.pipeline_stage_manager is not None:
-                layers_per_stage = self.shard_config.pipeline_stage_manager.distribute_layers(
-                    len(self.model.double_blocks) + len(self.model.single_blocks)
+                layers_per_stage = (
+                    self.shard_config.pipeline_stage_manager.distribute_layers(
+                        len(self.model.double_blocks) + len(self.model.single_blocks)
+                    )
                 )
                 if self.shard_config.pipeline_stage_manager.is_interleave:
                     self.shard_config.pipeline_stage_manager.stage_indices = (
-                        self.shard_config.pipeline_stage_manager.get_stage_index(layers_per_stage)
+                        self.shard_config.pipeline_stage_manager.get_stage_index(
+                            layers_per_stage
+                        )
                     )
                 else:
-                    stage_index = self.shard_config.pipeline_stage_manager.get_stage_index(layers_per_stage)
-                    fwd_fn = partial(mmdit_model_forward, shard_config=self.shard_config, stage_index=stage_index)
+                    stage_index = (
+                        self.shard_config.pipeline_stage_manager.get_stage_index(
+                            layers_per_stage
+                        )
+                    )
+                    fwd_fn = partial(
+                        mmdit_model_forward,
+                        shard_config=self.shard_config,
+                        stage_index=stage_index,
+                    )
             self.append_or_create_method_replacement(
                 description={
                     "forward": fwd_fn,
@@ -735,9 +935,12 @@ class MMDiTPolicy(Policy):
             )
 
         if self.shard_config.enable_tensor_parallelism:
-            mlp_hidden_size = int(self.model.config.hidden_size * self.model.config.mlp_ratio)
+            mlp_hidden_size = int(
+                self.model.config.hidden_size * self.model.config.mlp_ratio
+            )
             assert (
-                self.model.config.num_heads % self.shard_config.tensor_parallel_size == 0
+                self.model.config.num_heads % self.shard_config.tensor_parallel_size
+                == 0
                 and mlp_hidden_size % self.shard_config.tensor_parallel_size == 0
             ), "num_heads and hidden_size should be divisible by tensor_parallel_size"
             for n in ["img", "txt"]:
@@ -758,17 +961,23 @@ class MMDiTPolicy(Policy):
                             SubModuleReplacementDescription(
                                 suffix=f"{n}_attn.q_proj",
                                 target_module=Linear1D_Col,
-                                kwargs={"seq_parallel_mode": self.shard_config.sequence_parallelism_mode},
+                                kwargs={
+                                    "seq_parallel_mode": self.shard_config.sequence_parallelism_mode
+                                },
                             ),
                             SubModuleReplacementDescription(
                                 suffix=f"{n}_attn.k_proj",
                                 target_module=Linear1D_Col,
-                                kwargs={"seq_parallel_mode": self.shard_config.sequence_parallelism_mode},
+                                kwargs={
+                                    "seq_parallel_mode": self.shard_config.sequence_parallelism_mode
+                                },
                             ),
                             SubModuleReplacementDescription(
                                 suffix=f"{n}_attn.v_proj",
                                 target_module=Linear1D_Col,
-                                kwargs={"seq_parallel_mode": self.shard_config.sequence_parallelism_mode},
+                                kwargs={
+                                    "seq_parallel_mode": self.shard_config.sequence_parallelism_mode
+                                },
                             ),
                         ]
                     )
@@ -777,17 +986,23 @@ class MMDiTPolicy(Policy):
                         SubModuleReplacementDescription(
                             suffix=f"{n}_attn.proj",
                             target_module=Linear1D_Row,
-                            kwargs={"seq_parallel_mode": self.shard_config.sequence_parallelism_mode},
+                            kwargs={
+                                "seq_parallel_mode": self.shard_config.sequence_parallelism_mode
+                            },
                         ),
                         SubModuleReplacementDescription(
                             suffix=f"{n}_mlp[0]",
                             target_module=Linear1D_Col,
-                            kwargs={"seq_parallel_mode": self.shard_config.sequence_parallelism_mode},
+                            kwargs={
+                                "seq_parallel_mode": self.shard_config.sequence_parallelism_mode
+                            },
                         ),
                         SubModuleReplacementDescription(
                             suffix=f"{n}_mlp[2]",
                             target_module=Linear1D_Row,
-                            kwargs={"seq_parallel_mode": self.shard_config.sequence_parallelism_mode},
+                            kwargs={
+                                "seq_parallel_mode": self.shard_config.sequence_parallelism_mode
+                            },
                         ),
                     ]
                 )
@@ -796,9 +1011,12 @@ class MMDiTPolicy(Policy):
             )
             policy[SingleStreamBlock].attribute_replacement.update(
                 {
-                    "num_heads": self.model.config.num_heads // self.shard_config.tensor_parallel_size,
-                    "hidden_size": self.model.config.hidden_size // self.shard_config.tensor_parallel_size,
-                    "mlp_hidden_dim": mlp_hidden_size // self.shard_config.tensor_parallel_size,
+                    "num_heads": self.model.config.num_heads
+                    // self.shard_config.tensor_parallel_size,
+                    "hidden_size": self.model.config.hidden_size
+                    // self.shard_config.tensor_parallel_size,
+                    "mlp_hidden_dim": mlp_hidden_size
+                    // self.shard_config.tensor_parallel_size,
                 }
             )
             if self.model.config.fused_qkv:
@@ -807,7 +1025,8 @@ class MMDiTPolicy(Policy):
                         suffix="linear1",
                         target_module=FusedLinear1D_Col,
                         kwargs={
-                            "split_sizes": [self.model.config.hidden_size] * 3 + [mlp_hidden_size],
+                            "split_sizes": [self.model.config.hidden_size] * 3
+                            + [mlp_hidden_size],
                             "seq_parallel_mode": self.shard_config.sequence_parallelism_mode,
                         },
                     ),
@@ -818,18 +1037,23 @@ class MMDiTPolicy(Policy):
                         SubModuleReplacementDescription(
                             suffix="q_proj",
                             target_module=Linear1D_Col,
-                            kwargs={"seq_parallel_mode": self.shard_config.sequence_parallelism_mode},
+                            kwargs={
+                                "seq_parallel_mode": self.shard_config.sequence_parallelism_mode
+                            },
                         ),
                         SubModuleReplacementDescription(
                             suffix="k_proj",
                             target_module=Linear1D_Col,
-                            kwargs={"seq_parallel_mode": self.shard_config.sequence_parallelism_mode},
+                            kwargs={
+                                "seq_parallel_mode": self.shard_config.sequence_parallelism_mode
+                            },
                         ),
                         SubModuleReplacementDescription(
                             suffix="v_mlp",
                             target_module=FusedLinear1D_Col,
                             kwargs={
-                                "split_sizes": [self.model.config.hidden_size] + [mlp_hidden_size],
+                                "split_sizes": [self.model.config.hidden_size]
+                                + [mlp_hidden_size],
                                 "seq_parallel_mode": self.shard_config.sequence_parallelism_mode,
                             },
                         ),
@@ -841,7 +1065,10 @@ class MMDiTPolicy(Policy):
                         suffix="linear2",
                         target_module=FusedLinear1D_Row,
                         kwargs={
-                            "split_sizes": [self.model.config.hidden_size, mlp_hidden_size],
+                            "split_sizes": [
+                                self.model.config.hidden_size,
+                                mlp_hidden_size,
+                            ],
                             "seq_parallel_mode": self.shard_config.sequence_parallelism_mode,
                         },
                     ),

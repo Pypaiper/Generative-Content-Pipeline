@@ -2,11 +2,19 @@ from functools import partial
 from typing import Dict, Union
 
 import torch.nn as nn
-from colossalai.shardformer.policies.base_policy import ModulePolicyDescription, Policy, SubModuleReplacementDescription
+from colossalai.shardformer.policies.base_policy import (
+    ModulePolicyDescription,
+    Policy,
+    SubModuleReplacementDescription,
+)
 
 from opensora.models.vae.tensor_parallel import Conv3dTPCol, Conv3dTPRow, GroupNormTP
 
-from .distributed import ContextParallelAttention, TPUpDecoderBlockCausal3D, prepare_parallel_attention_mask
+from .distributed import (
+    ContextParallelAttention,
+    TPUpDecoderBlockCausal3D,
+    prepare_parallel_attention_mask,
+)
 from .vae import DecoderCausal3D, EncoderCausal3D
 
 
@@ -73,7 +81,9 @@ class HunyuanVaePolicy(Policy):
                         split_output=True,
                     ),
                 ),
-                *gen_resnets_replacements("down_blocks[1].resnets[0]", with_shortcut=True),
+                *gen_resnets_replacements(
+                    "down_blocks[1].resnets[0]", with_shortcut=True
+                ),
                 *gen_resnets_replacements("down_blocks[1].resnets[1]"),
                 SubModuleReplacementDescription(
                     suffix="down_blocks[1].downsamplers[0].conv.conv",
@@ -85,9 +95,17 @@ class HunyuanVaePolicy(Policy):
                 ),
             ],
             attribute_replacement={
-                "down_blocks[0].downsamplers[0].channels": self.model.encoder.down_blocks[0].downsamplers[0].channels
+                "down_blocks[0].downsamplers[0].channels": self.model.encoder.down_blocks[
+                    0
+                ]
+                .downsamplers[0]
+                .channels
                 // self.shard_config.tensor_parallel_size,
-                "down_blocks[1].downsamplers[0].channels": self.model.encoder.down_blocks[1].downsamplers[0].channels
+                "down_blocks[1].downsamplers[0].channels": self.model.encoder.down_blocks[
+                    1
+                ]
+                .downsamplers[0]
+                .channels
                 // self.shard_config.tensor_parallel_size,
                 # "mid_block.attentions[0].processor": MemEfficientRingAttnProcessor(
                 #     self.shard_config.tensor_parallel_process_group
@@ -95,7 +113,8 @@ class HunyuanVaePolicy(Policy):
             },
             method_replacement={
                 "prepare_attention_mask": partial(
-                    prepare_parallel_attention_mask, cp_group=self.shard_config.tensor_parallel_process_group
+                    prepare_parallel_attention_mask,
+                    cp_group=self.shard_config.tensor_parallel_process_group,
                 ),
             },
         )
@@ -109,7 +128,9 @@ class HunyuanVaePolicy(Policy):
                         split_output=True,
                     ),
                 ),
-                *gen_resnets_replacements("up_blocks[2].resnets[0]", with_shortcut=True),
+                *gen_resnets_replacements(
+                    "up_blocks[2].resnets[0]", with_shortcut=True
+                ),
                 *gen_resnets_replacements("up_blocks[2].resnets[1]"),
                 *gen_resnets_replacements("up_blocks[2].resnets[2]"),
                 SubModuleReplacementDescription(
@@ -119,7 +140,9 @@ class HunyuanVaePolicy(Policy):
                         split_output=True,
                     ),
                 ),
-                *gen_resnets_replacements("up_blocks[3].resnets[0]", with_shortcut=True),
+                *gen_resnets_replacements(
+                    "up_blocks[3].resnets[0]", with_shortcut=True
+                ),
                 *gen_resnets_replacements("up_blocks[3].resnets[1]"),
                 *gen_resnets_replacements("up_blocks[3].resnets[2]"),
                 SubModuleReplacementDescription(
@@ -136,7 +159,9 @@ class HunyuanVaePolicy(Policy):
                 ),
             ],
             attribute_replacement={
-                "up_blocks[2].upsamplers[0].channels": self.model.decoder.up_blocks[2].upsamplers[0].channels
+                "up_blocks[2].upsamplers[0].channels": self.model.decoder.up_blocks[2]
+                .upsamplers[0]
+                .channels
                 // self.shard_config.tensor_parallel_size,
                 # "mid_block.attentions[0].processor": MemEfficientRingAttnProcessor(
                 #     self.shard_config.tensor_parallel_process_group
@@ -144,7 +169,8 @@ class HunyuanVaePolicy(Policy):
             },
             method_replacement={
                 "prepare_attention_mask": partial(
-                    prepare_parallel_attention_mask, cp_group=self.shard_config.tensor_parallel_process_group
+                    prepare_parallel_attention_mask,
+                    cp_group=self.shard_config.tensor_parallel_process_group,
                 ),
             },
         )

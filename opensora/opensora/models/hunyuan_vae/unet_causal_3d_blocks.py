@@ -1,5 +1,5 @@
 # Modified from diffusers==0.29.2 and HunyuanVideo
-# 
+#
 # Copyright 2024 The HuggingFace Team. All rights reserved.
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
@@ -13,7 +13,7 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
-# # 
+# #
 # Copyright 2024 HunyuanVideo
 #
 # This source code is licensed under the license found in the
@@ -45,11 +45,16 @@ def chunk_nearest_interpolate(
     limit = INTERPOLATE_NUMEL_LIMIT // np.prod(scale_factor)
     n_chunks = get_conv3d_n_chunks(x.numel(), x.size(1), limit)
     x_chunks = x.chunk(n_chunks, dim=1)
-    x_chunks = [F.interpolate(x_chunk, scale_factor=scale_factor, mode="nearest") for x_chunk in x_chunks]
+    x_chunks = [
+        F.interpolate(x_chunk, scale_factor=scale_factor, mode="nearest")
+        for x_chunk in x_chunks
+    ]
     return torch.cat(x_chunks, dim=1)
 
 
-def prepare_causal_attention_mask(n_frame: int, n_hw: int, dtype, device, batch_size: int = None):
+def prepare_causal_attention_mask(
+    n_frame: int, n_hw: int, dtype, device, batch_size: int = None
+):
     seq_len = n_frame * n_hw
     mask = torch.full((seq_len, seq_len), float("-inf"), dtype=dtype, device=device)
     for i in range(seq_len):
@@ -89,11 +94,14 @@ class CausalConv3d(nn.Module):
         )  # W, H, T
         self.time_causal_padding = padding
 
-        self.conv = ChannelChunkConv3d(chan_in, chan_out, kernel_size, stride=stride, dilation=dilation, **kwargs)
+        self.conv = ChannelChunkConv3d(
+            chan_in, chan_out, kernel_size, stride=stride, dilation=dilation, **kwargs
+        )
 
     def forward(self, x):
         x = F.pad(x, self.time_causal_padding, mode=self.pad_mode)
         return self.conv(x)
+
 
 class UpsampleCausal3D(nn.Module):
     """
@@ -112,7 +120,9 @@ class UpsampleCausal3D(nn.Module):
         self.channels = channels
         self.out_channels = out_channels or channels
         self.upsample_factor = upsample_factor
-        self.conv = CausalConv3d(self.channels, self.out_channels, kernel_size=kernel_size, bias=bias)
+        self.conv = CausalConv3d(
+            self.channels, self.out_channels, kernel_size=kernel_size, bias=bias
+        )
 
     def forward(
         self,
@@ -138,10 +148,14 @@ class UpsampleCausal3D(nn.Module):
         first_h, other_h = hidden_states.split((1, T - 1), dim=2)
         # process non-1st frames
         if T > 1:
-            other_h = chunk_nearest_interpolate(other_h, scale_factor=self.upsample_factor)
+            other_h = chunk_nearest_interpolate(
+                other_h, scale_factor=self.upsample_factor
+            )
         # proess 1st fram
         first_h = first_h.squeeze(2)
-        first_h = chunk_nearest_interpolate(first_h, scale_factor=self.upsample_factor[1:])
+        first_h = chunk_nearest_interpolate(
+            first_h, scale_factor=self.upsample_factor[1:]
+        )
         first_h = first_h.unsqueeze(2)
         # concat together
         if T > 1:
@@ -156,6 +170,7 @@ class UpsampleCausal3D(nn.Module):
         hidden_states = self.conv(hidden_states)
 
         return hidden_states
+
 
 class DownsampleCausal3D(nn.Module):
     """
@@ -172,7 +187,13 @@ class DownsampleCausal3D(nn.Module):
         super().__init__()
         self.channels = channels
         self.out_channels = channels
-        self.conv = CausalConv3d(self.channels, self.out_channels, kernel_size=kernel_size, stride=stride, bias=bias)
+        self.conv = CausalConv3d(
+            self.channels,
+            self.out_channels,
+            kernel_size=kernel_size,
+            stride=stride,
+            bias=bias,
+        )
 
     def forward(self, input_tensor: torch.FloatTensor) -> torch.FloatTensor:
         assert input_tensor.shape[1] == self.channels
@@ -213,19 +234,29 @@ class ResnetBlockCausal3D(nn.Module):
         if groups_out is None:
             groups_out = groups
 
-        self.norm1 = torch.nn.GroupNorm(num_groups=groups, num_channels=in_channels, eps=eps, affine=True)
+        self.norm1 = torch.nn.GroupNorm(
+            num_groups=groups, num_channels=in_channels, eps=eps, affine=True
+        )
         self.conv1 = CausalConv3d(in_channels, out_channels, kernel_size=3, stride=1)
-        self.norm2 = torch.nn.GroupNorm(num_groups=groups_out, num_channels=out_channels, eps=eps, affine=True)
+        self.norm2 = torch.nn.GroupNorm(
+            num_groups=groups_out, num_channels=out_channels, eps=eps, affine=True
+        )
 
         self.dropout = torch.nn.Dropout(dropout)
         conv_3d_out_channels = conv_3d_out_channels or out_channels
-        self.conv2 = CausalConv3d(out_channels, conv_3d_out_channels, kernel_size=3, stride=1)
+        self.conv2 = CausalConv3d(
+            out_channels, conv_3d_out_channels, kernel_size=3, stride=1
+        )
 
         self.nonlinearity = get_activation(non_linearity)
 
         self.upsample = self.downsample = None
 
-        self.use_in_shortcut = self.in_channels != conv_3d_out_channels if use_in_shortcut is None else use_in_shortcut
+        self.use_in_shortcut = (
+            self.in_channels != conv_3d_out_channels
+            if use_in_shortcut is None
+            else use_in_shortcut
+        )
 
         self.conv_shortcut = None
         if self.use_in_shortcut:
@@ -279,7 +310,9 @@ class UNetMidBlockCausal3D(nn.Module):
         output_scale_factor: float = 1.0,
     ):
         super().__init__()
-        resnet_groups = resnet_groups if resnet_groups is not None else min(in_channels // 4, 32)
+        resnet_groups = (
+            resnet_groups if resnet_groups is not None else min(in_channels // 4, 32)
+        )
         self.add_attention = add_attention
 
         if attn_groups is None:
@@ -342,14 +375,18 @@ class UNetMidBlockCausal3D(nn.Module):
         self.attentions = nn.ModuleList(attentions)
         self.resnets = nn.ModuleList(resnets)
 
-    def forward(self, hidden_states: torch.FloatTensor, attention_mask: Optional[torch.Tensor]) -> torch.FloatTensor:
+    def forward(
+        self, hidden_states: torch.FloatTensor, attention_mask: Optional[torch.Tensor]
+    ) -> torch.FloatTensor:
         hidden_states = self.resnets[0](hidden_states)
         for attn, resnet in zip(self.attentions, self.resnets[1:]):
             if attn is not None:
                 B, C, T, H, W = hidden_states.shape
                 hidden_states = rearrange(hidden_states, "b c f h w -> b (f h w) c")
                 hidden_states = attn(hidden_states, attention_mask=attention_mask)
-                hidden_states = rearrange(hidden_states, "b (f h w) c -> b c f h w", f=T, h=H, w=W)
+                hidden_states = rearrange(
+                    hidden_states, "b (f h w) c -> b c f h w", f=T, h=H, w=W
+                )
             hidden_states = resnet(hidden_states)
 
         return hidden_states

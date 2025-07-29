@@ -34,7 +34,13 @@ from .sampler import DistributedSampler, VariableVideoBatchSampler
 
 
 def _pin_memory_loop(
-    in_queue, out_queue, device_id, done_event, device, pin_memory_cache: PinMemoryCache, pin_memory_key: str
+    in_queue,
+    out_queue,
+    device_id,
+    done_event,
+    device,
+    pin_memory_cache: PinMemoryCache,
+    pin_memory_key: str,
 ):
     # This setting is thread local, and prevents the copy in pin_memory from
     # consuming all CPU cores.
@@ -63,7 +69,9 @@ def _pin_memory_loop(
                     pin_memory_value.copy_(val)
                     data[pin_memory_key] = pin_memory_value
             except Exception:
-                data = ExceptionWrapper(where=f"in pin memory thread for device {device_id}")
+                data = ExceptionWrapper(
+                    where=f"in pin memory thread for device {device_id}"
+                )
             r = (idx, data)
         while not done_event.is_set():
             try:
@@ -103,7 +111,10 @@ class _MultiProcessingDataLoaderIterForVideo(_MultiProcessingDataLoaderIter):
         #   Additional worker init function will take care of sharding in MP and Distributed
         if isinstance(self._dataset, (IterDataPipe, MapDataPipe)):
             self._worker_init_fn = functools.partial(
-                _sharding_worker_init_fn, self._worker_init_fn, self._world_size, self._rank
+                _sharding_worker_init_fn,
+                self._worker_init_fn,
+                self._world_size,
+                self._rank,
             )
 
         # No certainty which module multiprocessing_context is
@@ -158,7 +169,9 @@ class _MultiProcessingDataLoaderIterForVideo(_MultiProcessingDataLoaderIter):
             if self._pin_memory_device == "xpu":
                 current_device = torch.xpu.current_device()  # type: ignore[attr-defined]
             elif self._pin_memory_device == torch._C._get_privateuse1_backend_name():
-                custom_device_mod = getattr(torch, torch._C._get_privateuse1_backend_name())
+                custom_device_mod = getattr(
+                    torch, torch._C._get_privateuse1_backend_name()
+                )
                 current_device = custom_device_mod.current_device()
             else:
                 current_device = torch.cuda.current_device()  # choose cuda for default
@@ -196,7 +209,9 @@ class _MultiProcessingDataLoaderIterForVideo(_MultiProcessingDataLoaderIter):
                 atexit.register(_MultiProcessingDataLoaderIter._clean_up_worker, w)
 
         # .pid can be None only before process is spawned (not the case, so ignore)
-        _utils.signal_handling._set_worker_pids(id(self), tuple(w.pid for w in self._workers))  # type: ignore[misc]
+        _utils.signal_handling._set_worker_pids(
+            id(self), tuple(w.pid for w in self._workers)
+        )  # type: ignore[misc]
         _utils.signal_handling._set_SIGCHLD_handler()
         self._worker_pids_set = True
         self._reset(loader, first_iter=True)

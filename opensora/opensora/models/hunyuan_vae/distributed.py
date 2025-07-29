@@ -2,7 +2,10 @@ from typing import List, Optional, Tuple
 
 import torch
 import torch.distributed as dist
-from colossalai.shardformer.layer._operation import gather_forward_split_backward, split_forward_gather_backward
+from colossalai.shardformer.layer._operation import (
+    gather_forward_split_backward,
+    split_forward_gather_backward,
+)
 from colossalai.shardformer.layer.attn import RingComm, _rescale_out_lse
 from colossalai.shardformer.layer.utils import SeqParallelUtils
 from diffusers.models.attention_processor import Attention
@@ -34,7 +37,9 @@ def align_atten_bias(attn_bias):
     if S % align_size != 0:
         expand_S = (S // align_size + 1) * align_size
         new_shape = [B, N, S, expand_S]
-        attn_bias = torch.empty(new_shape, dtype=attn_bias.dtype, device=attn_bias.device)[:, :, :, :S].copy_(attn_bias)
+        attn_bias = torch.empty(
+            new_shape, dtype=attn_bias.dtype, device=attn_bias.device
+        )[:, :, :, :S].copy_(attn_bias)
     return attn_bias
 
 
@@ -67,7 +72,9 @@ def _attn_bwd(
     scale: Optional[float] = None,
 ):
     attn_bias = align_atten_bias(attn_bias)
-    inp = Inputs(q, k, v, attn_bias, p=0, scale=scale, output_dtype=q.dtype, is_partial=False)
+    inp = Inputs(
+        q, k, v, attn_bias, p=0, scale=scale, output_dtype=q.dtype, is_partial=False
+    )
     ctx = Context(lse, out, rng_state=rng_state)
     grads = _memory_efficient_attention_backward(ctx, inp, grad, None)
     return grads.dq, grads.dk, grads.dv
@@ -123,7 +130,10 @@ class MemEfficientRingAttention(torch.autograd.Function):
         out = None
         block_out = [None, None]
         softmax_lse = [None, None]
-        block_softmax_lse = [None, None]  # log sum exp, the denominator of softmax in attention
+        block_softmax_lse = [
+            None,
+            None,
+        ]  # log sum exp, the denominator of softmax in attention
         rng_states = [None for _ in range(sp_size)]
         sp_streams = [torch.cuda.current_stream(), sp_stream]
 
@@ -146,14 +156,22 @@ class MemEfficientRingAttention(torch.autograd.Function):
                 kv_block = kv_buffers[i % 2]
                 q_block = q
                 block_out[i % 2], block_softmax_lse[i % 2], rng_states[i] = _attn_fwd(
-                    q_block, kv_block[0], kv_block[1], attn_bias=block_attn_masks[block_idx], scale=softmax_scale
+                    q_block,
+                    kv_block[0],
+                    kv_block[1],
+                    attn_bias=block_attn_masks[block_idx],
+                    scale=softmax_scale,
                 )
                 MemEfficientRingAttention.ATTN_DONE.record()
                 # Pipeline the next KV comm with output correction instead of the next flash attn
                 # to minimize idle time when comm takes longer than attn.
                 _kv_comm(i + 1)
                 block_softmax_lse[i % 2] = (
-                    block_softmax_lse[i % 2].transpose(1, 2).unsqueeze(-1).contiguous().float()
+                    block_softmax_lse[i % 2]
+                    .transpose(1, 2)
+                    .unsqueeze(-1)
+                    .contiguous()
+                    .float()
                 )  # [B, N, S] -> [B, S, N, 1]
                 assert (
                     block_out[i % 2].shape[:-1] == block_softmax_lse[i % 2].shape[:-1]
@@ -164,7 +182,9 @@ class MemEfficientRingAttention(torch.autograd.Function):
                     out = block_out[0]
                     softmax_lse = block_softmax_lse[0]
                 else:
-                    out, softmax_lse = _rescale_out_lse(out, block_out[i % 2], softmax_lse, block_softmax_lse[i % 2])
+                    out, softmax_lse = _rescale_out_lse(
+                        out, block_out[i % 2], softmax_lse, block_softmax_lse[i % 2]
+                    )
                 block_idx = (block_idx - 1) % sp_size
         torch.cuda.current_stream().wait_stream(sp_stream)
         out = out.to(q.dtype)
@@ -230,7 +250,24 @@ class MemEfficientRingAttention(torch.autograd.Function):
         dq, dk, dv = [x.to(q.dtype) for x in (dq, *dkv)]
 
         torch.cuda.empty_cache()
-        return dq, dk, dv, None, None, None, None, None, None, None, None, None, None, None, None, None
+        return (
+            dq,
+            dk,
+            dv,
+            None,
+            None,
+            None,
+            None,
+            None,
+            None,
+            None,
+            None,
+            None,
+            None,
+            None,
+            None,
+            None,
+        )
 
     @staticmethod
     def attention(
@@ -261,7 +298,13 @@ class MemEfficientRingAttention(torch.autograd.Function):
         if MemEfficientRingAttention.SP_STREAM is None:
             MemEfficientRingAttention.SP_STREAM = torch.cuda.Stream()
         out, softmax_lse = MemEfficientRingAttention.apply(
-            q, k, v, sp_group, MemEfficientRingAttention.SP_STREAM, softmax_scale, attn_mask
+            q,
+            k,
+            v,
+            sp_group,
+            MemEfficientRingAttention.SP_STREAM,
+            softmax_scale,
+            attn_mask,
         )
         if return_softmax:
             return out, softmax_lse
@@ -272,7 +315,9 @@ class MemEfficientRingAttnProcessor:
     def __init__(self, sp_group: dist.ProcessGroup):
         self.sp_group = sp_group
         if not HAS_XFORMERS:
-            raise ImportError("MemEfficientRingAttnProcessor requires xformers, to use it, please install xformers.")
+            raise ImportError(
+                "MemEfficientRingAttnProcessor requires xformers, to use it, please install xformers."
+            )
 
     def __call__(
         self,
@@ -285,7 +330,9 @@ class MemEfficientRingAttnProcessor:
         **kwargs,
     ) -> torch.Tensor:
         sp_group = self.sp_group
-        assert sp_group is not None, "sp_group must be provided for MemEfficientRingAttnProcessor"
+        assert sp_group is not None, (
+            "sp_group must be provided for MemEfficientRingAttnProcessor"
+        )
 
         residual = hidden_states
         if attn.spatial_norm is not None:
@@ -295,20 +342,30 @@ class MemEfficientRingAttnProcessor:
 
         if input_ndim == 4:
             batch_size, channel, height, width = hidden_states.shape
-            hidden_states = hidden_states.view(batch_size, channel, height * width).transpose(1, 2)
+            hidden_states = hidden_states.view(
+                batch_size, channel, height * width
+            ).transpose(1, 2)
 
         batch_size, sequence_length, _ = (
-            hidden_states.shape if encoder_hidden_states is None else encoder_hidden_states.shape
+            hidden_states.shape
+            if encoder_hidden_states is None
+            else encoder_hidden_states.shape
         )
 
         if attention_mask is not None:
-            attention_mask = attn.prepare_attention_mask(attention_mask, sequence_length, batch_size)
+            attention_mask = attn.prepare_attention_mask(
+                attention_mask, sequence_length, batch_size
+            )
             # scaled_dot_product_attention expects attention_mask shape to be
             # (batch, heads, source_length, target_length)
-            attention_mask = attention_mask.view(batch_size, attn.heads, -1, attention_mask.shape[-1])
+            attention_mask = attention_mask.view(
+                batch_size, attn.heads, -1, attention_mask.shape[-1]
+            )
 
         if attn.group_norm is not None:
-            hidden_states = attn.group_norm(hidden_states.transpose(1, 2)).transpose(1, 2)
+            hidden_states = attn.group_norm(hidden_states.transpose(1, 2)).transpose(
+                1, 2
+            )
 
         hidden_states = split_forward_gather_backward(hidden_states, 1, sp_group)
 
@@ -317,7 +374,9 @@ class MemEfficientRingAttnProcessor:
         if encoder_hidden_states is None:
             encoder_hidden_states = hidden_states
         elif attn.norm_cross:
-            encoder_hidden_states = attn.norm_encoder_hidden_states(encoder_hidden_states)
+            encoder_hidden_states = attn.norm_encoder_hidden_states(
+                encoder_hidden_states
+            )
 
         key = attn.to_k(encoder_hidden_states)
         value = attn.to_v(encoder_hidden_states)
@@ -330,11 +389,13 @@ class MemEfficientRingAttnProcessor:
         key = key.view(batch_size, -1, attn.heads, head_dim)
         value = value.view(batch_size, -1, attn.heads, head_dim)
 
-        assert (
-            query.shape[1] % dist.get_world_size(sp_group) == 0
-        ), f"sequence length ({query.shape[1]}) must be divisible by sp_group size ({dist.get_world_size(sp_group)})"
+        assert query.shape[1] % dist.get_world_size(sp_group) == 0, (
+            f"sequence length ({query.shape[1]}) must be divisible by sp_group size ({dist.get_world_size(sp_group)})"
+        )
 
-        hidden_states = MemEfficientRingAttention.attention(query, key, value, sp_group, attn_mask=attention_mask)
+        hidden_states = MemEfficientRingAttention.attention(
+            query, key, value, sp_group, attn_mask=attention_mask
+        )
 
         hidden_states = hidden_states.reshape(batch_size, -1, attn.heads * head_dim)
         hidden_states = hidden_states.to(query.dtype)
@@ -347,7 +408,9 @@ class MemEfficientRingAttnProcessor:
         hidden_states = gather_forward_split_backward(hidden_states, 1, sp_group)
 
         if input_ndim == 4:
-            hidden_states = hidden_states.transpose(-1, -2).reshape(batch_size, channel, height, width)
+            hidden_states = hidden_states.transpose(-1, -2).reshape(
+                batch_size, channel, height, width
+            )
 
         if attn.residual_connection:
             hidden_states = hidden_states + residual
@@ -359,10 +422,14 @@ class MemEfficientRingAttnProcessor:
 
 class ContextParallelAttention:
     def __init__(self):
-        raise ImportError(f"ContextParallelAttention should not be initialized directly.")
+        raise ImportError(
+            "ContextParallelAttention should not be initialized directly."
+        )
 
     @staticmethod
-    def from_native_module(module: Attention, process_group, *args, **kwargs) -> Attention:
+    def from_native_module(
+        module: Attention, process_group, *args, **kwargs
+    ) -> Attention:
         """
         Convert a native RMSNorm module to colossalai layer norm module,
         and optionally mark parameters for gradient aggregation.
@@ -403,26 +470,44 @@ def _context_chunk_attn_fwd(
 ):
     seq_len = q.shape[1]
     n_chunks = get_conv3d_n_chunks(seq_len, seq_align, seq_limit)
-    q_chunks, k_chunks, v_chunks = q.chunk(n_chunks, dim=1), k.chunk(n_chunks, dim=1), v.chunk(n_chunks, dim=1)
-    attn_bias_chunks = attn_bias.chunk(n_chunks, dim=2) if attn_bias is not None else [None] * n_chunks
+    q_chunks, k_chunks, v_chunks = (
+        q.chunk(n_chunks, dim=1),
+        k.chunk(n_chunks, dim=1),
+        v.chunk(n_chunks, dim=1),
+    )
+    attn_bias_chunks = (
+        attn_bias.chunk(n_chunks, dim=2) if attn_bias is not None else [None] * n_chunks
+    )
     out_chunks = []
     lse_chunks = []
     rng_states = []
     for q_chunk, attn_bias_chunk in zip(q_chunks, attn_bias_chunks):
         inner_attn_bias_chunks = (
-            attn_bias_chunk.chunk(n_chunks, dim=3) if attn_bias_chunk is not None else [None] * n_chunks
+            attn_bias_chunk.chunk(n_chunks, dim=3)
+            if attn_bias_chunk is not None
+            else [None] * n_chunks
         )
         out_chunk = None
-        for k_chunk, v_chunk, inner_attn_bias_chunk in zip(k_chunks, v_chunks, inner_attn_bias_chunks):
-            block_out, block_lse, rng_state = _attn_fwd(q_chunk, k_chunk, v_chunk, inner_attn_bias_chunk, scale)
-            block_lse = block_lse.transpose(1, 2).unsqueeze(-1).contiguous().float()  # [B, N, S] -> [B, S, N, 1]
+        for k_chunk, v_chunk, inner_attn_bias_chunk in zip(
+            k_chunks, v_chunks, inner_attn_bias_chunks
+        ):
+            block_out, block_lse, rng_state = _attn_fwd(
+                q_chunk, k_chunk, v_chunk, inner_attn_bias_chunk, scale
+            )
+            block_lse = (
+                block_lse.transpose(1, 2).unsqueeze(-1).contiguous().float()
+            )  # [B, N, S] -> [B, S, N, 1]
             rng_states.append(rng_state)
             if out_chunk is None:
                 out_chunk = block_out
                 lse_chunk = block_lse
             else:
-                out_chunk, lse_chunk = _rescale_out_lse(out_chunk, block_out, lse_chunk, block_lse)
-            lse_chunk = lse_chunk.squeeze(-1).transpose(1, 2).contiguous()  # [B, S, N, 1] -> [B, N, S]
+                out_chunk, lse_chunk = _rescale_out_lse(
+                    out_chunk, block_out, lse_chunk, block_lse
+                )
+            lse_chunk = (
+                lse_chunk.squeeze(-1).transpose(1, 2).contiguous()
+            )  # [B, S, N, 1] -> [B, N, S]
         out_chunks.append(out_chunk)
         lse_chunks.append(lse_chunk)
     out = torch.cat(out_chunks, dim=1)
@@ -449,8 +534,14 @@ def _context_chunk_attn_bwd(
     if n_chunks == 1:
         return _attn_bwd(grad, q, k, v, out, lse, rng_states, attn_bias, scale)
 
-    q_chunks, k_chunks, v_chunks = q.chunk(n_chunks, dim=1), k.chunk(n_chunks, dim=1), v.chunk(n_chunks, dim=1)
-    attn_bias_chunks = attn_bias.chunk(n_chunks, dim=2) if attn_bias is not None else [None] * n_chunks
+    q_chunks, k_chunks, v_chunks = (
+        q.chunk(n_chunks, dim=1),
+        k.chunk(n_chunks, dim=1),
+        v.chunk(n_chunks, dim=1),
+    )
+    attn_bias_chunks = (
+        attn_bias.chunk(n_chunks, dim=2) if attn_bias is not None else [None] * n_chunks
+    )
     out_chunks = out.chunk(n_chunks, dim=1)
     dout_chunks = grad.chunk(n_chunks, dim=1)
     lse_chunks = lse.chunk(n_chunks, dim=-1)
@@ -473,7 +564,9 @@ def _context_chunk_attn_bwd(
         q_chunk = q_chunks[q_idx]
         attn_bias_chunk = attn_bias_chunks[q_idx]
         inner_attn_bias_chunks = (
-            attn_bias_chunk.chunk(n_chunks, dim=3) if attn_bias_chunk is not None else [None] * n_chunks
+            attn_bias_chunk.chunk(n_chunks, dim=3)
+            if attn_bias_chunk is not None
+            else [None] * n_chunks
         )
         out_chunk = out_chunks[q_idx]
         dout_chunk = dout_chunks[q_idx]
@@ -488,7 +581,15 @@ def _context_chunk_attn_bwd(
             dv_acc = dv_chunks[kv_idx]
 
             block_dq, block_dk, block_dv = _attn_bwd(
-                dout_chunk, q_chunk, k_chunk, v_chunk, out_chunk, lse_chunk, rng_states[i], inner_attn_bias_chunk, scale
+                dout_chunk,
+                q_chunk,
+                k_chunk,
+                v_chunk,
+                out_chunk,
+                lse_chunk,
+                rng_states[i],
+                inner_attn_bias_chunk,
+                scale,
             )
 
             dq_acc += block_dq
@@ -500,10 +601,18 @@ def _context_chunk_attn_bwd(
 
 
 def prepare_parallel_causal_attention_mask(
-    parallel_rank: int, parallel_size: int, n_frame: int, n_hw: int, dtype, device, batch_size: int = None
+    parallel_rank: int,
+    parallel_size: int,
+    n_frame: int,
+    n_hw: int,
+    dtype,
+    device,
+    batch_size: int = None,
 ):
     seq_len = n_frame * n_hw
-    assert seq_len % parallel_size == 0, f"seq_len {seq_len} must be divisible by parallel_size {parallel_size}"
+    assert seq_len % parallel_size == 0, (
+        f"seq_len {seq_len} must be divisible by parallel_size {parallel_size}"
+    )
     local_seq_len = seq_len // parallel_size
     local_seq_start = local_seq_len * parallel_rank
     if dtype is torch.bfloat16:
@@ -558,7 +667,9 @@ class TPUpDecoderBlockCausal3D(UpsampleCausal3D):
         )
         self.tp_group = tp_group
         tp_size = dist.get_world_size(group=self.tp_group)
-        assert self.channels % tp_size == 0, f"channels {self.channels} must be divisible by tp_size {tp_size}"
+        assert self.channels % tp_size == 0, (
+            f"channels {self.channels} must be divisible by tp_size {tp_size}"
+        )
         self.channels = self.channels // tp_size
 
     def forward(self, input_tensor):

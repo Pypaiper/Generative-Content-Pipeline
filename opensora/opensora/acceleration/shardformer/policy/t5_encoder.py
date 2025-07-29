@@ -1,6 +1,9 @@
 from colossalai.shardformer.modeling.jit import get_jit_fused_dropout_add_func
-from colossalai.shardformer.modeling.t5 import get_jit_fused_T5_layer_ff_forward, get_T5_layer_self_attention_forward
-from colossalai.shardformer.policies.base_policy import Policy, SubModuleReplacementDescription
+from colossalai.shardformer.modeling.t5 import (
+    get_jit_fused_T5_layer_ff_forward,
+    get_T5_layer_self_attention_forward,
+)
+from colossalai.shardformer.policies.base_policy import Policy
 
 
 class T5EncoderPolicy(Policy):
@@ -12,7 +15,7 @@ class T5EncoderPolicy(Policy):
         return self.model
 
     def module_policy(self):
-        from transformers.models.t5.modeling_t5 import T5LayerFF, T5LayerSelfAttention, T5Stack
+        from transformers.models.t5.modeling_t5 import T5LayerFF, T5LayerSelfAttention
 
         policy = {}
 

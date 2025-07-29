@@ -23,7 +23,7 @@ try:
     import dask.dataframe as dd
 
     SUPPORT_DASK = True
-except:
+except ImportError:
     SUPPORT_DASK = False
 
 VID_EXTENSIONS = (".mp4", ".avi", ".mov", ".mkv")
@@ -55,12 +55,22 @@ def is_url(url):
 
 def read_file(input_path, memory_efficient=False):
     if input_path.endswith(".csv"):
-        assert not memory_efficient, "Memory efficient mode is not supported for CSV files"
+        assert not memory_efficient, (
+            "Memory efficient mode is not supported for CSV files"
+        )
         return pd.read_csv(input_path)
     elif input_path.endswith(".parquet"):
         columns = None
         if memory_efficient:
-            columns = ["path", "num_frames", "height", "width", "aspect_ratio", "fps", "resolution"]
+            columns = [
+                "path",
+                "num_frames",
+                "height",
+                "width",
+                "aspect_ratio",
+                "fps",
+                "resolution",
+            ]
         if SUPPORT_DASK:
             ret = dd.read_parquet(input_path, columns=columns).compute()
         else:
@@ -83,17 +93,22 @@ def download_url(input_path):
 
 
 def temporal_random_crop(
-    vframes: torch.Tensor, num_frames: int, frame_interval: int, return_frame_indices: bool = False
+    vframes: torch.Tensor,
+    num_frames: int,
+    frame_interval: int,
+    return_frame_indices: bool = False,
 ) -> torch.Tensor | tuple[torch.Tensor, np.ndarray]:
     temporal_sample = video_transforms.TemporalRandomCrop(num_frames * frame_interval)
     total_frames = len(vframes)
     start_frame_ind, end_frame_ind = temporal_sample(total_frames)
 
-    assert (
-        end_frame_ind - start_frame_ind >= num_frames
-    ), f"Not enough frames to sample, {end_frame_ind} - {start_frame_ind} < {num_frames}"
+    assert end_frame_ind - start_frame_ind >= num_frames, (
+        f"Not enough frames to sample, {end_frame_ind} - {start_frame_ind} < {num_frames}"
+    )
 
-    frame_indices = np.linspace(start_frame_ind, end_frame_ind - 1, num_frames, dtype=int)
+    frame_indices = np.linspace(
+        start_frame_ind, end_frame_ind - 1, num_frames, dtype=int
+    )
     video = vframes[frame_indices]
     if return_frame_indices:
         return video, frame_indices
@@ -105,13 +120,17 @@ def get_transforms_video(name="center", image_size=(256, 256)):
     if name is None:
         return None
     elif name == "center":
-        assert image_size[0] == image_size[1], "image_size must be square for center crop"
+        assert image_size[0] == image_size[1], (
+            "image_size must be square for center crop"
+        )
         transform_video = transforms.Compose(
             [
                 video_transforms.ToTensorVideo(),  # TCHW
                 # video_transforms.RandomHorizontalFlipVideo(),
                 video_transforms.UCFCenterCropVideo(image_size[0]),
-                transforms.Normalize(mean=[0.5, 0.5, 0.5], std=[0.5, 0.5, 0.5], inplace=True),
+                transforms.Normalize(
+                    mean=[0.5, 0.5, 0.5], std=[0.5, 0.5, 0.5], inplace=True
+                ),
             ]
         )
     elif name == "resize_crop":
@@ -119,7 +138,9 @@ def get_transforms_video(name="center", image_size=(256, 256)):
             [
                 video_transforms.ToTensorVideo(),  # TCHW
                 video_transforms.ResizeCrop(image_size),
-                transforms.Normalize(mean=[0.5, 0.5, 0.5], std=[0.5, 0.5, 0.5], inplace=True),
+                transforms.Normalize(
+                    mean=[0.5, 0.5, 0.5], std=[0.5, 0.5, 0.5], inplace=True
+                ),
             ]
         )
     elif name == "rand_size_crop":
@@ -127,7 +148,9 @@ def get_transforms_video(name="center", image_size=(256, 256)):
             [
                 video_transforms.ToTensorVideo(),  # TCHW
                 video_transforms.RandomSizedCrop(image_size),
-                transforms.Normalize(mean=[0.5, 0.5, 0.5], std=[0.5, 0.5, 0.5], inplace=True),
+                transforms.Normalize(
+                    mean=[0.5, 0.5, 0.5], std=[0.5, 0.5, 0.5], inplace=True
+                ),
             ]
         )
     else:
@@ -139,29 +162,43 @@ def get_transforms_image(name="center", image_size=(256, 256)):
     if name is None:
         return None
     elif name == "center":
-        assert image_size[0] == image_size[1], "Image size must be square for center crop"
+        assert image_size[0] == image_size[1], (
+            "Image size must be square for center crop"
+        )
         transform = transforms.Compose(
             [
-                transforms.Lambda(lambda pil_image: center_crop_arr(pil_image, image_size[0])),
+                transforms.Lambda(
+                    lambda pil_image: center_crop_arr(pil_image, image_size[0])
+                ),
                 # transforms.RandomHorizontalFlip(),
                 transforms.ToTensor(),
-                transforms.Normalize(mean=[0.5, 0.5, 0.5], std=[0.5, 0.5, 0.5], inplace=True),
+                transforms.Normalize(
+                    mean=[0.5, 0.5, 0.5], std=[0.5, 0.5, 0.5], inplace=True
+                ),
             ]
         )
     elif name == "resize_crop":
         transform = transforms.Compose(
             [
-                transforms.Lambda(lambda pil_image: resize_crop_to_fill(pil_image, image_size)),
+                transforms.Lambda(
+                    lambda pil_image: resize_crop_to_fill(pil_image, image_size)
+                ),
                 transforms.ToTensor(),
-                transforms.Normalize(mean=[0.5, 0.5, 0.5], std=[0.5, 0.5, 0.5], inplace=True),
+                transforms.Normalize(
+                    mean=[0.5, 0.5, 0.5], std=[0.5, 0.5, 0.5], inplace=True
+                ),
             ]
         )
     elif name == "rand_size_crop":
         transform = transforms.Compose(
             [
-                transforms.Lambda(lambda pil_image: rand_size_crop_arr(pil_image, image_size)),
+                transforms.Lambda(
+                    lambda pil_image: rand_size_crop_arr(pil_image, image_size)
+                ),
                 transforms.ToTensor(),
-                transforms.Normalize(mean=[0.5, 0.5, 0.5], std=[0.5, 0.5, 0.5], inplace=True),
+                transforms.Normalize(
+                    mean=[0.5, 0.5, 0.5], std=[0.5, 0.5, 0.5], inplace=True
+                ),
             ]
         )
     else:
@@ -169,7 +206,9 @@ def get_transforms_image(name="center", image_size=(256, 256)):
     return transform
 
 
-def read_image_from_path(path, transform=None, transform_name="center", num_frames=1, image_size=(256, 256)):
+def read_image_from_path(
+    path, transform=None, transform_name="center", num_frames=1, image_size=(256, 256)
+):
     image = pil_loader(path)
     if transform is None:
         transform = get_transforms_image(image_size=image_size, name=transform_name)
@@ -179,8 +218,12 @@ def read_image_from_path(path, transform=None, transform_name="center", num_fram
     return video
 
 
-def read_video_from_path(path, transform=None, transform_name="center", image_size=(256, 256)):
-    vframes, aframes, info = torchvision.io.read_video(filename=path, pts_unit="sec", output_format="TCHW")
+def read_video_from_path(
+    path, transform=None, transform_name="center", image_size=(256, 256)
+):
+    vframes, aframes, info = torchvision.io.read_video(
+        filename=path, pts_unit="sec", output_format="TCHW"
+    )
     if transform is None:
         transform = get_transforms_video(image_size=image_size, name=transform_name)
     video = transform(vframes)  # T C H W
@@ -193,10 +236,14 @@ def read_from_path(path, image_size, transform_name="center"):
         path = download_url(path)
     ext = os.path.splitext(path)[-1].lower()
     if ext.lower() in VID_EXTENSIONS:
-        return read_video_from_path(path, image_size=image_size, transform_name=transform_name)
+        return read_video_from_path(
+            path, image_size=image_size, transform_name=transform_name
+        )
     else:
         assert ext.lower() in IMG_EXTENSIONS, f"Unsupported file format: {ext}"
-        return read_image_from_path(path, image_size=image_size, transform_name=transform_name)
+        return read_image_from_path(
+            path, image_size=image_size, transform_name=transform_name
+        )
 
 
 def save_sample(
@@ -226,9 +273,17 @@ def save_sample(
             x.clamp_(min=low, max=high)
             x.sub_(low).div_(max(high - low, 1e-5))
 
-        x = x.mul_(255).add_(0.5).clamp_(0, 255).permute(1, 2, 3, 0).to("cpu", torch.uint8)
+        x = (
+            x.mul_(255)
+            .add_(0.5)
+            .clamp_(0, 255)
+            .permute(1, 2, 3, 0)
+            .to("cpu", torch.uint8)
+        )
 
-        write_video(save_path, x, fps=fps, video_codec="h264", options={"crf": str(crf)})
+        write_video(
+            save_path, x, fps=fps, video_codec="h264", options={"crf": str(crf)}
+        )
     if verbose:
         print(f"Saved to {save_path}")
     return save_path
@@ -240,15 +295,21 @@ def center_crop_arr(pil_image, image_size):
     https://github.com/openai/guided-diffusion/blob/8fb3ad9197f16bbc40620447b2742e13458d2831/guided_diffusion/image_datasets.py#L126
     """
     while min(*pil_image.size) >= 2 * image_size:
-        pil_image = pil_image.resize(tuple(x // 2 for x in pil_image.size), resample=Image.BOX)
+        pil_image = pil_image.resize(
+            tuple(x // 2 for x in pil_image.size), resample=Image.BOX
+        )
 
     scale = image_size / min(*pil_image.size)
-    pil_image = pil_image.resize(tuple(round(x * scale) for x in pil_image.size), resample=Image.BICUBIC)
+    pil_image = pil_image.resize(
+        tuple(round(x * scale) for x in pil_image.size), resample=Image.BICUBIC
+    )
 
     arr = np.array(pil_image)
     crop_y = (arr.shape[0] - image_size) // 2
     crop_x = (arr.shape[1] - image_size) // 2
-    return Image.fromarray(arr[crop_y : crop_y + image_size, crop_x : crop_x + image_size])
+    return Image.fromarray(
+        arr[crop_y : crop_y + image_size, crop_x : crop_x + image_size]
+    )
 
 
 def rand_size_crop_arr(pil_image, image_size):

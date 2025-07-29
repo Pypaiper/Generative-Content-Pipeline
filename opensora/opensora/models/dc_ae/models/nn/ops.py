@@ -24,7 +24,13 @@ from opensora.models.vae.utils import ChannelChunkConv3d
 
 from ...models.nn.act import build_act
 from ...models.nn.norm import build_norm
-from ...models.nn.vo_ops import chunked_interpolate, get_same_padding, pixel_shuffle_3d, pixel_unshuffle_3d, resize
+from ...models.nn.vo_ops import (
+    chunked_interpolate,
+    get_same_padding,
+    pixel_shuffle_3d,
+    pixel_unshuffle_3d,
+    resize,
+)
 from ...utils import list_sum, val2list, val2tuple
 
 __all__ = [
@@ -95,14 +101,20 @@ class ConvLayer(nn.Module):
             )
             self.padding = padding
             self.dropout = nn.Dropout3d(dropout, inplace=False) if dropout > 0 else None
-            assert isinstance(stride, (int, tuple)), "stride must be an integer or 3-tuple for 3d conv"
-            self.conv = ChannelChunkConv3d(  # padding is handled by F.pad() in forward()
-                in_channels,
-                out_channels,
-                kernel_size=(kernel_size, kernel_size, kernel_size),
-                stride=(stride, stride, stride) if isinstance(stride, int) else stride,
-                groups=groups,
-                bias=use_bias,
+            assert isinstance(stride, (int, tuple)), (
+                "stride must be an integer or 3-tuple for 3d conv"
+            )
+            self.conv = (
+                ChannelChunkConv3d(  # padding is handled by F.pad() in forward()
+                    in_channels,
+                    out_channels,
+                    kernel_size=(kernel_size, kernel_size, kernel_size),
+                    stride=(stride, stride, stride)
+                    if isinstance(stride, int)
+                    else stride,
+                    groups=groups,
+                    bias=use_bias,
+                )
             )
         else:
             padding = get_same_padding(kernel_size)
@@ -127,7 +139,9 @@ class ConvLayer(nn.Module):
         if self.dropout is not None:
             x = self.dropout(x)
         if self.is_video:  # custom padding for 3d conv
-            x = self.pad(x, self.padding, mode=self.pad_mode_3d)  # "constant" padding defaults to 0
+            x = self.pad(
+                x, self.padding, mode=self.pad_mode_3d
+            )  # "constant" padding defaults to 0
         x = self.conv(x)
         if self.norm:
             x = self.norm(x)
@@ -152,7 +166,9 @@ class UpSampleLayer(nn.Module):
 
     @torch.autocast(device_type="cuda", enabled=False)
     def forward(self, x: torch.Tensor) -> torch.Tensor:
-        if (self.size is not None and tuple(x.shape[-2:]) == self.size) or self.factor == 1:
+        if (
+            self.size is not None and tuple(x.shape[-2:]) == self.size
+        ) or self.factor == 1:
             return x
         if x.dtype in [torch.float16, torch.bfloat16]:
             x = x.float()
@@ -287,10 +303,18 @@ class InterpolateConvUpSampleLayer(nn.Module):
             x = F.interpolate(x, scale_factor=self.factor, mode=self.mode)
         elif x.dim() == 5:
             # [B, C, T, H, W] -> [B, C, T*factor, H*factor, W*factor]
-            if self.temporal_upsample and x.size(2) != 1:  # temporal upsample for video input
-                x = chunked_interpolate(x, scale_factor=[self.factor, self.factor, self.factor], mode=self.mode)
+            if (
+                self.temporal_upsample and x.size(2) != 1
+            ):  # temporal upsample for video input
+                x = chunked_interpolate(
+                    x,
+                    scale_factor=[self.factor, self.factor, self.factor],
+                    mode=self.mode,
+                )
             else:
-                x = chunked_interpolate(x, scale_factor=[1, self.factor, self.factor], mode=self.mode)
+                x = chunked_interpolate(
+                    x, scale_factor=[1, self.factor, self.factor], mode=self.mode
+                )
         x = self.conv(x)
         return x
 
@@ -444,7 +468,9 @@ class MBConv(nn.Module):
         use_bias = val2tuple(use_bias, 3)
         norm = val2tuple(norm, 3)
         act_func = val2tuple(act_func, 3)
-        mid_channels = round(in_channels * expand_ratio) if mid_channels is None else mid_channels
+        mid_channels = (
+            round(in_channels * expand_ratio) if mid_channels is None else mid_channels
+        )
 
         self.inverted_conv = ConvLayer(
             in_channels,
@@ -500,7 +526,9 @@ class FusedMBConv(nn.Module):
         norm = val2tuple(norm, 2)
         act_func = val2tuple(act_func, 2)
 
-        mid_channels = round(in_channels * expand_ratio) if mid_channels is None else mid_channels
+        mid_channels = (
+            round(in_channels * expand_ratio) if mid_channels is None else mid_channels
+        )
 
         self.spatial_conv = ConvLayer(
             in_channels,
@@ -546,7 +574,9 @@ class GLUMBConv(nn.Module):
         norm = val2tuple(norm, 3)
         act_func = val2tuple(act_func, 3)
 
-        mid_channels = round(in_channels * expand_ratio) if mid_channels is None else mid_channels
+        mid_channels = (
+            round(in_channels * expand_ratio) if mid_channels is None else mid_channels
+        )
 
         self.glu_act = build_act(act_func[1], inplace=False)
         self.inverted_conv = ConvLayer(
@@ -610,7 +640,9 @@ class ResBlock(nn.Module):
         norm = val2tuple(norm, 2)
         act_func = val2tuple(act_func, 2)
 
-        mid_channels = round(in_channels * expand_ratio) if mid_channels is None else mid_channels
+        mid_channels = (
+            round(in_channels * expand_ratio) if mid_channels is None else mid_channels
+        )
 
         self.conv1 = ConvLayer(
             in_channels,
@@ -689,7 +721,13 @@ class LiteMLA(nn.Module):
                         groups=3 * total_dim,
                         bias=use_bias[0],
                     ),
-                    conv_class(3 * total_dim, 3 * total_dim, 1, groups=3 * heads, bias=use_bias[0]),
+                    conv_class(
+                        3 * total_dim,
+                        3 * total_dim,
+                        1,
+                        groups=3 * heads,
+                        bias=use_bias[0],
+                    ),
                 )
                 for scale in scales
             ]
@@ -790,7 +828,9 @@ class LiteMLA(nn.Module):
         original_dtype = att_map.dtype
         if original_dtype in [torch.float16, torch.bfloat16]:
             att_map = att_map.float()
-        att_map = att_map / (torch.sum(att_map, dim=2, keepdim=True) + self.eps)  # b h n n
+        att_map = att_map / (
+            torch.sum(att_map, dim=2, keepdim=True) + self.eps
+        )  # b h n n
         att_map = att_map.to(original_dtype)
         out = torch.matmul(v, att_map)  # b h d n
 
@@ -948,7 +988,9 @@ class DAGBlock(nn.Module):
         self.output_ops = nn.ModuleList(list(outputs.values()))
 
     def forward(self, feature_dict: dict[str, torch.Tensor]) -> dict[str, torch.Tensor]:
-        feat = [op(feature_dict[key]) for key, op in zip(self.input_keys, self.input_ops)]
+        feat = [
+            op(feature_dict[key]) for key, op in zip(self.input_keys, self.input_ops)
+        ]
         if self.merge == "add":
             feat = list_sum(feat)
         elif self.merge == "cat":
