@@ -14,7 +14,8 @@ dependencies = [
     "bs4",
     "cssutils",
     "Pillow",
-    "gutenbergpy"
+    "gutenbergpy",
+    "requests"
 ]
 
 [project.optional-dependencies]
