@@ -11,8 +11,8 @@ services:
       - "4510-4559:4510-4559"
   db:
     image: postgres:14
-    ports:
-      - "5432:5432"
+    #ports:
+    #  - "5432:5432"
     environment:
       - POSTGRES_USER=postgres
       - POSTGRES_PASSWORD=postgres
@@ -88,4 +88,5 @@ services:
     volumes:
       - .:/config/workspace
       - ${HOME}/.ssh/:/.ssh
-    network_mode: service:ts-coder
+    networks:
+      - app-network
