@@ -11,11 +11,17 @@ dependencies = [
     "asyncpg",
     "psycopg2",
     "aiosqlite",
-    "bs4"
+    "bs4",
+    "cssutils",
+    "Pillow"
 ]
 
 [project.optional-dependencies]
 dev = ["ipykernel"]
+
+[tool.pyproject2conda.dependencies]
+cssutils = { pip = true }
+Pillow = { pip = true }
 
 [build-system]
 requires = ["setuptools>=61.0.0", "wheel"]
