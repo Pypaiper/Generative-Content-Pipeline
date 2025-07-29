@@ -13,7 +13,8 @@ dependencies = [
     "aiosqlite",
     "bs4",
     "cssutils",
-    "Pillow"
+    "Pillow",
+    "gutenbergpy"
 ]
 
 [project.optional-dependencies]
