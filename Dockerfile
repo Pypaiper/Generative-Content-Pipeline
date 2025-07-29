@@ -23,14 +23,13 @@ RUN apt update && apt install -y libc6
 RUN conda install -n base conda-forge::conda-pypi
 RUN conda install -c conda-forge pyproject2conda
 RUN conda update conda && conda update --all
-
+# OPEN SORA env
 RUN git clone -b ml-utilities https://github.com/Pypaiper/Generative-Content-Pipeline.git && \
   cd Generative-Content-Pipeline && \
   pyproject2conda yaml -f opensora/pyproject.toml --python 3.10 -o environment.yaml --name opensora && \
   conda config --add channels pytorch && \
   conda config --add channels defaults && \
   conda config --add channels  conda-forge && \
-  cat environment.yaml && sleep 7 && \
   conda env create --file environment.yaml
 
 
@@ -45,16 +44,28 @@ RUN git clone https://github.com/hpcaitech/TensorNVMe.git && \
 RUN git clone https://github.com/hpcaitech/Open-Sora.git && \
     cd Open-Sora && \
      . /opt/conda/etc/profile.d/conda.sh && conda activate opensora && \
-    pip3 install -r requirements.txt && \
-    pip3 install -v .
+    pip3 install -r requirements.txt
+
 RUN . /opt/conda/etc/profile.d/conda.sh && conda activate opensora && \
   pip3 install xformers==0.0.27.post2 --index-url https://download.pytorch.org/whl/cu121 triton diffusers && \
   pip3 install flash_attn==2.7.4.post1 --no-build-isolation
+
+# Download base model
+RUN . /opt/conda/etc/profile.d/conda.sh && conda activate opensora && \
+  pip3 install "huggingface_hub[cli]" &&\
+  huggingface-cli download hpcai-tech/Open-Sora-v2 --local-dir /models
+
+# Install projects editable into environments
+COPY . /config/workspace
+RUN . /opt/conda/etc/profile.d/conda.sh && conda activate opensora && \
+   cd /config/workspace/opensora && \
+   pip3 install -e . --no-deps
 
 
 
 # Set the working directory (optional)
 WORKDIR /app
+
 # Set the entrypoint to run code-server
 ENTRYPOINT ["code-server", "--bind-addr", "0.0.0.0:28080"]
 

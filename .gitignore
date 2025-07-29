@@ -1,3 +1,4 @@
 *uv.lock
 notebooks/*-h
 .env
+opensora/notebooks/models/
