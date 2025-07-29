@@ -27,7 +27,7 @@ RUN conda update conda && conda update --all
 # OPEN SORA env
 RUN git clone -b ml-utilities https://github.com/Pypaiper/Generative-Content-Pipeline.git && \
   cd Generative-Content-Pipeline && \
-  pyproject2conda yaml -f opensora/pyproject.toml --python 3.10 -o environment.yaml --name opensora && \
+  pyproject2conda yaml -f opensora/pyproject.toml --python 3.10 -o environment.yaml -e dev --name opensora && \
   conda config --add channels pytorch && \
   conda config --add channels defaults && \
   conda config --add channels  conda-forge && \
@@ -35,7 +35,7 @@ RUN git clone -b ml-utilities https://github.com/Pypaiper/Generative-Content-Pip
 
 # scraping env
 RUN cd Generative-Content-Pipeline && \
-  pyproject2conda yaml -f scraping/pyproject.toml --python 3.10 -o environment.yaml --name scraping && \
+  pyproject2conda yaml -f scraping/pyproject.toml --python 3.10 -o environment.yaml -e dev --name scraping && \
   conda config --add channels defaults && \
   conda config --add channels  conda-forge && \
   conda env create --file environment.yaml
