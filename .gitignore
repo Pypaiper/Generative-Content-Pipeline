@@ -2,3 +2,4 @@
 notebooks/*-h
 .env
 opensora/notebooks/models/
+__pycache__/

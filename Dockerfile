@@ -23,6 +23,7 @@ RUN apt update && apt install -y libc6
 RUN conda install -n base conda-forge::conda-pypi
 RUN conda install -c conda-forge pyproject2conda
 RUN conda update conda && conda update --all
+
 # OPEN SORA env
 RUN git clone -b ml-utilities https://github.com/Pypaiper/Generative-Content-Pipeline.git && \
   cd Generative-Content-Pipeline && \
@@ -32,6 +33,12 @@ RUN git clone -b ml-utilities https://github.com/Pypaiper/Generative-Content-Pip
   conda config --add channels  conda-forge && \
   conda env create --file environment.yaml
 
+# scraping env
+RUN cd Generative-Content-Pipeline && \
+  pyproject2conda yaml -f scraping/pyproject.toml --python 3.10 -o environment.yaml --name scraping && \
+  conda config --add channels defaults && \
+  conda config --add channels  conda-forge && \
+  conda env create --file environment.yaml
 
 # install tensornvme
 RUN git clone https://github.com/hpcaitech/TensorNVMe.git && \
@@ -40,27 +47,32 @@ RUN git clone https://github.com/hpcaitech/TensorNVMe.git && \
     pip3 install -r requirements.txt && \
     pip3 install -v --no-cache-dir .
 
-
+# Install opensora dependencies
 RUN git clone https://github.com/hpcaitech/Open-Sora.git && \
     cd Open-Sora && \
      . /opt/conda/etc/profile.d/conda.sh && conda activate opensora && \
-    pip3 install -r requirements.txt
+    pip3 install -r requirements.txt && \
+    # Extra dependencies per opensora's readme
+    pip3 install xformers==0.0.27.post2 --index-url https://download.pytorch.org/whl/cu121 triton diffusers && \
+    pip3 install flash_attn==2.7.4.post1 --no-build-isolation
 
-RUN . /opt/conda/etc/profile.d/conda.sh && conda activate opensora && \
-  pip3 install xformers==0.0.27.post2 --index-url https://download.pytorch.org/whl/cu121 triton diffusers && \
-  pip3 install flash_attn==2.7.4.post1 --no-build-isolation
-
-# Download base model
-RUN . /opt/conda/etc/profile.d/conda.sh && conda activate opensora && \
-  pip3 install "huggingface_hub[cli]" &&\
-  huggingface-cli download hpcai-tech/Open-Sora-v2 --local-dir /models
 
 # Install projects editable into environments
-COPY . /config/workspace
+COPY ./scraping /config/workspace/scraping
+COPY ./opensora/opensora /config/workspace/opensora/opensora
+COPY ./opensora/pyproject.toml /config/workspace/opensora/pyproject.toml
+
+## opensora requires scraping, install itself and dependencies
 RUN . /opt/conda/etc/profile.d/conda.sh && conda activate opensora && \
    cd /config/workspace/opensora && \
-   pip3 install -e . --no-deps
+   pip3 install -e . --no-deps && \
+    cd ../scraping && \
+   pip3 install -e . --no-deps 
 
+## opensora requires scraping, install itself and dependencies
+RUN . /opt/conda/etc/profile.d/conda.sh && conda activate scraping && \
+   cd /config/workspace/scraping && \
+   pip3 install -e . --no-deps 
 
 
 # Set the working directory (optional)
