@@ -37,17 +37,17 @@ def read_config(config_path: str) -> Config:
     return cfg
 
 
-def parse_configs() -> Config:
+def parse_configs(config_path: str) -> Config:
     """
     This function parses the configuration file and command line arguments.
 
     Returns:
         Config: The configuration object.
     """
-    config, args = parse_args()
-    cfg = read_config(config)
-    cfg = merge_args(cfg, args)
-    cfg.config_path = config
+    
+    cfg = read_config(config_path)
+    # cfg = merge_args(cfg, args)
+    cfg.config_path = config_path
 
     # hard-coded for spatial compression
     if cfg.get("ae_spatial_compression", None) is not None:
