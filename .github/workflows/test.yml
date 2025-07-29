@@ -25,16 +25,40 @@ jobs:
       - name: Ruff format
         run: uvx ruff format --diff scraping/ video_generation/ opensora/
 
-  # test:
-  #   name: Run tests
-  #   strategy:
-  #     matrix:
-  #       os: [ubuntu-latest, macos-latest, windows-latest]
-  #   runs-on: ${{ matrix.os }}
-  #   steps:
-  #     - uses: actions/checkout@v4
-  #     - name: Enable UV
-  #       uses: astral-sh/setup-uv@v5
-  #       with:
-  #         enable-cache: true
-  #     - run: uv run --group dev pytest
+  test-opensora:
+    runs-on: ubuntu-latest
+    steps:
+    - uses: actions/checkout@v4
+    - uses: conda-incubator/setup-miniconda@v2
+      with:
+        python-version: 3.9
+        channels: conda-forge, pytorch, defaults
+        activate-environment: my-env
+    - name: Install  conda dependencies
+      shell: bash -l {0} # Use a login shell to ensure conda is activated
+      run: |
+        conda install -c conda-forge pyproject2conda
+        pyproject2conda yaml -f opensora/pyproject.toml --python 3.10 -o environment.yaml --name opensora
+        conda env update --file environment.yaml --prune
+    - name: Install  source dependencies
+      shell: bash -l {0} # Use a login shell to ensure conda is activated
+      run: |
+        git clone https://github.com/hpcaitech/TensorNVMe.git
+        cd TensorNVMe
+        . /opt/conda/etc/profile.d/conda.sh && conda activate opensora
+        pip3 install -r requirements.txt
+        pip3 install -v --no-cache-dir .
+        cd ..
+        rm -rf TensorNVMe
+        git clone https://github.com/hpcaitech/Open-Sora.git
+        cd Open-Sora
+        . /opt/conda/etc/profile.d/conda.sh && conda activate opensora
+        pip3 install -r requirements.txt
+        pip3 install -v .
+        cd ..
+        rm -rf Open-Sora
+
+    - name: Run tests
+      shell: bash -l {0}
+      run: |
+        python -m pytest
