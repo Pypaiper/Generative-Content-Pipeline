@@ -1,0 +1,10 @@
+README.md
+pyproject.toml
+opensora/__init__.py
+opensora/registry.py
+opensora/setup.py
+opensora.egg-info/PKG-INFO
+opensora.egg-info/SOURCES.txt
+opensora.egg-info/dependency_links.txt
+opensora.egg-info/requires.txt
+opensora.egg-info/top_level.txt
