@@ -24,7 +24,6 @@ dependencies = [
   "jupyter>=1.1.1",
   "ipykernel>=6.30.0",
   "opencv-python-headless>=4.12.0.88",
-  "tensornvme",
 ]
 
 [tool.pyproject2conda.dependencies]
