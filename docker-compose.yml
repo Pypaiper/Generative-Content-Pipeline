@@ -1,38 +1,66 @@
-networks:
-  app-network:
-volumes:
-  postgres_data:
-services:
-  localstack:
-    image: localstack/localstack
-    ports:
-      - "4566:4566"
-      - "4510-4559:4510-4559"
-  db:
-    image: postgres:14
-    ports:
-      - "5432:5432"
-    environment:
-      - POSTGRES_USER=postgres
-      - POSTGRES_PASSWORD=postgres
-      - POSTGRES_DB=books-db
-    volumes:
-      - postgres_data:/var/lib/postgresql/data
-    networks:
-      - app-network
 
-  opensearch:
-    image: opensearchproject/opensearch:2.19.0
+# starts 4 docker containers running minio server instances.
+# using nginx reverse proxy, load balancing, you can access
+# it through port 9000.
+services:
+  ts-coder:
+    image: tailscale/tailscale:latest
+    container_name: ts-coder
+    hostname: code
     environment:
-      - discovery.type=single-node
-      - plugins.security.disabled=true
-      - bootstrap.memory_lock=true
-      - OPENSEARCH_JAVA_OPTS=-Xms512m -Xmx512m
-      - OPENSEARCH_INITIAL_ADMIN_PASSWORD=OpenSearch123$
-      - OPENSEARCH_USERNAME=admin
-      - OPENSEARCH_PASSWORD=OpenSearch123$
-    networks:
-      - app-network
-    ports:
-      - "9200:9200"
-      - "9600:9600"
+      - TS_AUTHKEY=$TS_OAUTH_code
+      - "TS_EXTRA_ARGS=--advertise-tags=tag:container --reset"
+      - TS_STATE_DIR=/var/lib/tailscale
+      - TS_USERSPACE=false
+      - TS_SERVE_CONFIG=/config/code.json
+    volumes:
+      - ./ts-code/state:/var/lib/tailscale
+      - ./ts-code/config:/config
+    devices:
+      - /dev/net/tun:/dev/net/tun
+    cap_add:
+      - net_admin
+      - sys_module
+    restart: "always"
+
+    dns:
+    - 100.100.100.100
+    - 8.8.8.8
+    - 1.1.1.1
+
+    dns_search:
+    - bengal-galaxy.ts.net
+  code:
+    #image: lscr.io/linuxserver/code-server:latest
+    build:
+      context: .
+    container_name: code
+    environment:
+      - PUID=1000
+      - PGID=1000
+      - TZ=Etc/UTC
+      - DOCKER_USER=$USER
+      - SUDO_PASSWORD=password
+      - PROXY_DOMAIN=bengal-galaxy.ts.net #optional
+      - NVIDIA_VISIBLE_DEVICES=0
+      - NVIDIA_DRIVER_CAPABILITIES=all
+      - DEFAULT_WORKSPACE=/config/workspace/Generative-Content-Pipeline
+      - VIRTUAL_ENV=/opt/venv
+      #- CUDA_VISIBLE_DEVICES=0
+    # depends_on:
+    #   - mysql
+    #   - minio
+    restart: "always"
+    network_mode: service:ts-coder
+    shm_size: 6gb
+    deploy:
+      resources:
+        reservations:
+          devices:
+            - driver: nvidia
+              count: 1
+              capabilities: [gpu]
+    volumes:
+      - .:/config/workspace
+      - ${HOME}/.ssh/:/.ssh
+
