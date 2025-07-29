@@ -30,6 +30,7 @@ dependencies = [
 [tool.pyproject2conda.dependencies]
 colossalai = { pip = true }
 liger-kernel = { pip = true }
+opencv-python-headless = { pip = true }
 
 [tool.uv.sources]
 torch = [
