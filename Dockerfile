@@ -3,11 +3,6 @@ FROM hpcaitech/pytorch-cuda:2.5.1-12.4.1
 # install dependencies
 RUN conda install -y cmake
 
-
-#RUN ln -s  /usr/lib/x86_64-linux-gnu/libaio.so.1  /usr/lib/x86_64-linux-gnu/libaio.so.1t64
-#ENV LD_LIBRARY_PATH $LD_LIBRARY_PATH:/usr/lib/x86_64-linux-gnu/
-
-
 # Install code-server using their install script
 RUN apt update && apt install -y curl && sleep 2
 RUN curl -fsSL https://code-server.dev/install.sh | sh
