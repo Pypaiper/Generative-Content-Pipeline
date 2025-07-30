@@ -4,11 +4,7 @@ networks:
 volumes:
   postgres_data:
 services:
-  localstack:
-    image: localstack/localstack
-    ports:
-      - "4566:4566"
-      - "4510-4559:4510-4559"
+
   db:
     image: postgres:14
     #ports:
@@ -59,18 +55,18 @@ services:
       - VIRTUAL_ENV=/opt/venv
       - PORT=8080
       # aws cred
-      - SECRET_KEY=
+      - SECRET_KEY
       - AWS_KMS_DB_PASSWORD_URI=test
       - AWS_KMS_DB_PASSWORD_REGION=us-west-1
       - AWS_KMS_OS_PASSWORD_URI=
       # local db
-      - DB_HOST=localhost
+      - DB_HOST=db
       - DB_NAME=books-db
       - DB_USER=postgres
       - DB_PASSWORD=postgres
       - DB_PORT=5432
       # local s3
-      - S3_HOST=http://localhost:4566
+      - S3_HOST=http://localstack:4566
       - AWS_ACCESS_KEY_ID=test
       - AWS_SECRET_ACCESS_KEY=test
       - S3_REGION=us-west-1

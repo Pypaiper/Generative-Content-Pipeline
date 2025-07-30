@@ -58,10 +58,10 @@ RUN git clone https://github.com/hpcaitech/Open-Sora.git && \
 
 
 # Install projects editable into environments
-COPY ./scraping /config/workspace/scraping
 COPY ./opensora/opensora /config/workspace/opensora/opensora
 COPY ./opensora/pyproject.toml /config/workspace/opensora/pyproject.toml
-
+COPY ./scraping/scraping /config/workspace/scraping/scraping
+COPY ./scraping/pyproject.toml /config/workspace/scraping/pyproject.toml
 ## opensora requires scraping, install itself and dependencies
 RUN . /opt/conda/etc/profile.d/conda.sh && conda activate opensora && \
    cd /config/workspace/opensora && \
@@ -69,15 +69,15 @@ RUN . /opt/conda/etc/profile.d/conda.sh && conda activate opensora && \
     cd ../scraping && \
    pip3 install -e . --no-deps 
 
-## opensora requires scraping, install itself and dependencies
+## install scraping and dependencies
 RUN . /opt/conda/etc/profile.d/conda.sh && conda activate scraping && \
    cd /config/workspace/scraping && \
-   pip3 install -e . --no-deps 
-
+   pip3 install -e . && \
+   sed -i -e 's/for idx, dir in enumerate(dirs):/for idx, dir in enumerate(dirs):\n            print(idx);\n            if idx in [9159,14419]: continue/g' /opt/conda/envs/scraping/lib/python3.10/site-packages/gutenbergpy/parse/rdfparser.py
 
 # Set the working directory (optional)
 WORKDIR /app
 
 # Set the entrypoint to run code-server
-ENTRYPOINT ["code-server", "--bind-addr", "0.0.0.0:28080"]
+ENTRYPOINT ["code-server", "--bind-addr", "0.0.0.0:8080"]
 
