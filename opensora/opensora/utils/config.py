@@ -44,7 +44,7 @@ def parse_configs(config_path: str) -> Config:
     Returns:
         Config: The configuration object.
     """
-    
+
     cfg = read_config(config_path)
     # cfg = merge_args(cfg, args)
     cfg.config_path = config_path
