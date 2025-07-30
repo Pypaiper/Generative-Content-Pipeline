@@ -12,4 +12,4 @@
 
 1. Start docker: `docker compose up`
 2. Get password: `docker compose exec  -it code cat /root/.config/code-server/config.yaml`
-3. Login at `127.0.0.1:8080`
+3. Login with password at `127.0.0.1:8080/?folder=/config/workspace`
