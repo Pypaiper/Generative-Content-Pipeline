@@ -4,7 +4,13 @@ networks:
 volumes:
   postgres_data:
 services:
-
+  localstack:
+    image: localstack/localstack
+    ports:
+      - "4566:4566"
+      - "4510-4559:4510-4559"
+    networks:
+      - app-network
   db:
     image: postgres:14
     #ports:
