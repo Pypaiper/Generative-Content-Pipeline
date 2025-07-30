@@ -5,7 +5,7 @@ discriminator = dict(
     from_pretrained=None,
     input_nc=3,
     n_layers=5,
-    conv_cls="conv3d"
+    conv_cls="conv3d",
 )
 disc_lr_scheduler = dict(warmup_steps=0)
 
@@ -30,5 +30,5 @@ optim_discriminator = dict(
 
 grad_checkpoint = True
 model = dict(
-    disc_off_grad_ckpt = True, # set to true if your `grad_checkpoint` is True
+    disc_off_grad_ckpt=True,  # set to true if your `grad_checkpoint` is True
 )

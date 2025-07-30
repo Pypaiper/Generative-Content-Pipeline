@@ -1,5 +1,5 @@
 # ============
-# model config 
+# model config
 # ============
 model = dict(
     type="dc_ae",
@@ -9,7 +9,7 @@ model = dict(
 )
 
 # ============
-# data config 
+# data config
 # ============
 dataset = dict(
     type="video_text",
@@ -27,7 +27,7 @@ num_workers = 12
 prefetch_factor = 2
 
 # ============
-# train config 
+# train config
 # ============
 optim = dict(
     cls="HybridAdam",
@@ -65,10 +65,9 @@ wandb_project = "dcae"
 update_warmup_steps = True
 
 # ============
-# loss config 
+# loss config
 # ============
 vae_loss_config = dict(
     perceptual_loss_weight=0.5,
     kl_loss_weight=0,
 )
-

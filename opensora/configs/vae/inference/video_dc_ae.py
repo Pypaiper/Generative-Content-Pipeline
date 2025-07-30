@@ -29,4 +29,3 @@ save_dir = "samples/video_dc_ae"
 num_workers = 24
 num_bucket_build_workers = 16
 prefetch_factor = 4
-
