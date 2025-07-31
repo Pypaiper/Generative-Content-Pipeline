@@ -18,7 +18,7 @@ data "aws_s3_bucket" "book" {
 }
 
 output "my_bucket_name" {
-  value = "${data.aws_s3_bucket.mybucket.bucket}"
+  value = "${data.aws_s3_bucket.book.bucket}"
 }
 
 
