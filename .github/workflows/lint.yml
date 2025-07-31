@@ -1,0 +1,26 @@
+name: Test
+
+on:
+
+  push:
+    branches-ignore:
+      - master  # Excludes the master branch
+  pull_request:
+    branches: 
+      - master
+jobs:
+  lint:
+    name: Lint
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Enable UV
+        uses: astral-sh/setup-uv@v5
+        with:
+          enable-cache: true
+      - name: Install ruff
+        run: uv tool install ruff@latest
+      - name: Ruff lint
+        run: uvx ruff check scraping/ video_generation/ opensora/
+      - name: Ruff format
+        run: uvx ruff format --diff scraping/ video_generation/ opensora/
