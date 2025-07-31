@@ -1,8 +1,30 @@
 
-# starts 4 docker containers running minio server instances.
-# using nginx reverse proxy, load balancing, you can access
-# it through port 9000.
+networks:
+  app-network:
+volumes:
+  postgres_data:
 services:
+  localstack:
+    image: localstack/localstack
+    ports:
+      - "4566:4566"
+      - "4510-4559:4510-4559"
+    networks:
+      - app-network
+  db:
+    image: postgres:14
+    #ports:
+    #  - "5432:5432"
+    environment:
+      - POSTGRES_USER=postgres
+      - POSTGRES_PASSWORD=postgres
+      - POSTGRES_DB=books-db
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    networks:
+      - app-network
+
+
 
   code:
     build:
@@ -12,13 +34,35 @@ services:
       - PUID=1000
       - PGID=1000
       - TZ=Etc/UTC
+      - RANK=0
+      - LOCAL_RANK=0
+      - WORLD_SIZE=1
+      - MASTER_ADDR=localhost
+      - MASTER_PORT=12345
       - DOCKER_USER=$USER
       - SUDO_PASSWORD=password
       - NVIDIA_VISIBLE_DEVICES=0
       - NVIDIA_DRIVER_CAPABILITIES=all
       - DEFAULT_WORKSPACE=/config/workspace
       - VIRTUAL_ENV=/opt/venv
-      - PORT=28080
+      - PORT=8080
+      # aws cred
+      - SECRET_KEY
+      - AWS_KMS_DB_PASSWORD_URI=test
+      - AWS_KMS_DB_PASSWORD_REGION=us-west-1
+      - AWS_KMS_OS_PASSWORD_URI=
+      # local db
+      - DB_HOST=db
+      - DB_NAME=books-db
+      - DB_USER=postgres
+      - DB_PASSWORD=postgres
+      - DB_PORT=5432
+      # local s3
+      - S3_HOST=http://localstack:4566
+      - AWS_ACCESS_KEY_ID=test
+      - AWS_SECRET_ACCESS_KEY=test
+      - S3_REGION=us-west-1
+      - S3_BUCKET=book-bucket-4f6f1f88-f5a5-4e82-a1ee-3b9cb4c105e5
       #- CUDA_VISIBLE_DEVICES=0
     restart: "always"
     shm_size: 6gb
@@ -32,5 +76,7 @@ services:
     volumes:
       - .:/config/workspace
       - ${HOME}/.ssh/:/.ssh
+    networks:
+      - app-network
     ports:
-      - 28080:28080
+      - 8080:8080

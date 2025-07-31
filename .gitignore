@@ -1,3 +1,7 @@
 *uv.lock
 notebooks/*-h
 .env
+opensora/notebooks/models/
+__pycache__/
+scraping/notebooks/cache
+scraping/notebooks/*db
