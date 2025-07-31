@@ -5,3 +5,10 @@ opensora/notebooks/models/
 __pycache__/
 scraping/notebooks/cache
 scraping/notebooks/*db
+infra/remote/.terraform
+infra/remote/terraform.tfstate
+infra/remote/terraform.tfstate.backup
+infra/remote/.terraform.lock.hcl
+
+
+
