@@ -32,11 +32,11 @@ jobs:
         working-directory: ./infra/remote # Path to your Terraform subdirectory
 
       - name: Terraform Plan
-        run: terraform plan -out=tfplan -var-file=variables.tfvars
+        run: terraform plan -out=tfplan -var-file=variables.tf
         working-directory: ./infra/remote
 
       - name: Terraform Apply
-        run: terraform apply tfplan  -var-file=variables.tfvars
+        run: terraform apply tfplan  -var-file=variables.tf
         working-directory: ./infra/remote
         env:
           # Define any necessary environment variables for your Terraform deployment
