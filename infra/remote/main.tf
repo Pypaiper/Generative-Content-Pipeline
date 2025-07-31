@@ -19,6 +19,7 @@ variable "db_password" {
 }
 
 
+
 variable "db_name" {
     description = "The name of database."
     type        = string
@@ -32,9 +33,11 @@ variable "bucket_name" {
     sensitive   = true # Mark as sensitive to prevent logging
 }
 
+
 provider "aws" {
   region = var.region # Example for AWS, replace with your desired region
 }
+
 
 
 
@@ -260,5 +263,6 @@ output "sagemaker_notebook_url" {
   description = "The URL of the SageMaker notebook instance."
   sensitive=true
 }
+
 
 
