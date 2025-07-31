@@ -2,9 +2,8 @@
 name: Terraform Apply on Merge
 
 on:
-  push:
-    branches:
-      - main # Trigger on push to the main branch
+  pull_request:
+    types: [opened, synchronize, reopened]
     paths:
       - 'infra/remote/**' # Trigger only on changes within this subdirectory
 
