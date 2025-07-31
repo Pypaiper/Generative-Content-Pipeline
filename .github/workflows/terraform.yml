@@ -34,6 +34,9 @@ jobs:
       - name: Terraform Plan
         run: terraform plan -out=tfplan
         working-directory: ./infra/remote
+        env:
+          # Define any necessary environment variables for your Terraform deployment
+          TF_VAR_region: ${{ secrets.REGION }} # Map GitHub secret to Terraform variable
 
       - name: Terraform Apply
         run: terraform apply tfplan
