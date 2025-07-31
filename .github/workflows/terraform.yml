@@ -10,6 +10,7 @@ on:
 jobs:
   terraform:
     runs-on: ubuntu-latest
+    environment: terraform # If using an environment secret
     steps:
       - name: Checkout repository code
         uses: actions/checkout@v4
