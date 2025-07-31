@@ -33,7 +33,7 @@ jobs:
 
 
       - name: Import Bucket
-        run: terraform import aws_s3_bucket.my_bucket ${{ bucket_name }}
+        run: terraform import aws_s3_bucket.my_bucket $bucket_name
         working-directory: ./infra/remote # Path to your Terraform subdirectory
 
 
