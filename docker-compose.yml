@@ -24,21 +24,7 @@ services:
     networks:
       - app-network
 
-  opensearch:
-    image: opensearchproject/opensearch:2.19.0
-    environment:
-      - discovery.type=single-node
-      - plugins.security.disabled=true
-      - bootstrap.memory_lock=true
-      - OPENSEARCH_JAVA_OPTS=-Xms512m -Xmx512m
-      - OPENSEARCH_INITIAL_ADMIN_PASSWORD=OpenSearch123$
-      - OPENSEARCH_USERNAME=admin
-      - OPENSEARCH_PASSWORD=OpenSearch123$
-    networks:
-      - app-network
-    ports:
-      - "9200:9200"
-      - "9600:9600"
+
 
   code:
     build:
@@ -92,3 +78,5 @@ services:
       - ${HOME}/.ssh/:/.ssh
     networks:
       - app-network
+    ports:
+      - 8080:8080

@@ -62,7 +62,7 @@ RUN . /opt/conda/etc/profile.d/conda.sh && conda activate opensora && \
    cd /config/workspace/opensora && \
    pip3 install -e . --no-deps && \
     cd ../scraping && \
-   pip3 install -e . --no-deps 
+   pip3 install -e . --no-deps
 
 ## install scraping and dependencies
 RUN . /opt/conda/etc/profile.d/conda.sh && conda activate scraping && \
