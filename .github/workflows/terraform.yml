@@ -1,0 +1,43 @@
+
+name: Terraform Apply on Merge
+
+on:
+  push:
+    branches:
+      - main # Trigger on push to the main branch
+    paths:
+      - 'infra/remote/**' # Trigger only on changes within this subdirectory
+
+jobs:
+  terraform:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repository code
+        uses: actions/checkout@v4
+
+      - name: Configure AWS Credentials
+        uses: aws-actions/configure-aws-credentials@v3
+        with:
+          aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
+          aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+          aws-region: ${{ secrets.REGION }}
+
+      - name: Setup Terraform
+        uses: hashicorp/setup-terraform@v3
+        with:
+          terraform_version: 1.5.0 # Specify your desired Terraform version
+
+      - name: Terraform Init
+        run: terraform init
+        working-directory: ./infra/remote # Path to your Terraform subdirectory
+
+      - name: Terraform Plan
+        run: terraform plan -out=tfplan
+        working-directory: ./infra/remote
+
+      - name: Terraform Apply
+        run: terraform apply tfplan
+        working-directory: ./infra/remote
+        env:
+          # Define any necessary environment variables for your Terraform deployment
+          TF_VAR_region: ${{ secrets.REGION }} # Map GitHub secret to Terraform variable
