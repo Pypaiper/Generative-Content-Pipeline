@@ -26,8 +26,10 @@ dependencies = [
   "opencv-python-headless>=4.12.0.88",
 ]
 
+
 [project.optional-dependencies]
 dev = ["ipykernel"]
+
 
 [tool.pyproject2conda.dependencies]
 colossalai = { pip = true }
