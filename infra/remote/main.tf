@@ -152,9 +152,9 @@ resource "aws_db_instance" "rds_instance" {
   engine               = "mysql"
   engine_version       = "8.0.35"
   instance_class       = "db.t3.micro"
-  db_name              = vars.db_name
-  username             = vars.db_username
-  password             = vars.db_password # Use secrets management in production
+  db_name              = "${vars.db_name}"
+  username             = "${vars.db_username}"
+  password             = "${vars.db_password}"
   parameter_group_name = "default.mysql8.0"
   skip_final_snapshot  = true
   publicly_accessible  = false # Adjust based on security requirements
