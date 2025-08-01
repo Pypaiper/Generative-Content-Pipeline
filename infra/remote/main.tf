@@ -69,7 +69,7 @@ resource "aws_subnet" "sagemaker_private_subnet" {
 
 
 resource "aws_s3_bucket" "my_bucket" {
-  bucket = vars.bucket_name
+  bucket = var.bucket_name
 
   lifecycle {
     prevent_destroy = true
@@ -152,9 +152,9 @@ resource "aws_db_instance" "rds_instance" {
   engine               = "mysql"
   engine_version       = "8.0.35"
   instance_class       = "db.t3.micro"
-  db_name              = vars.db_name
-  username             = vars.db_username
-  password             = vars.db_password # Use secrets management in production
+  db_name              = var.db_name
+  username             = var.db_username
+  password             = var.db_password # Use secrets management in production
   parameter_group_name = "default.mysql8.0"
   skip_final_snapshot  = true
   publicly_accessible  = false # Adjust based on security requirements
@@ -229,9 +229,9 @@ resource "aws_sagemaker_notebook_instance_lifecycle_configuration" "example" {
 
   on_start = <<-EOF
 #!/bin/bash
-export DB_NAME="${vars.db_name}"
-export DB_USERNAME="${vars.db_username}"
-export DB_PASSWORD="${vars.db_password}"
+export DB_NAME="${var.db_name}"
+export DB_USERNAME="${var.db_username}"
+export DB_PASSWORD="${var.db_password}"
 export DB_HOST="${aws_db_instance.rds_instance.address}"
 # You can also set variables here that are sourced by your notebook
 EOF
