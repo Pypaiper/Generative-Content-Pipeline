@@ -32,10 +32,10 @@ jobs:
         working-directory: ./infra/remote # Path to your Terraform subdirectory
 
       - name: Terraform Plan
-        run: terraform import aws_s3_bucket.my_bucket $TF_VAR_bucket_name && \
-            terraform import aws_db_subnet_group.rds_subnet_group rds-subnet-group && \
-            terraform import aws_iam_role.sagemaker_role sagemaker-notebook-role && \
-            terraform import aws_iam_policy.sagemaker_s3_policy sagemaker-s3-access-policy && \
+        run: terraform import aws_s3_bucket.my_bucket $TF_VAR_bucket_name &&
+            terraform import aws_db_subnet_group.rds_subnet_group rds-subnet-group &&
+            terraform import aws_iam_role.sagemaker_role sagemaker-notebook-role &&
+            terraform import aws_iam_policy.sagemaker_s3_policy sagemaker-s3-access-policy &&
             terraform plan -out=tfplan
         working-directory: ./infra/remote
         env:
