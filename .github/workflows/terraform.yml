@@ -38,14 +38,7 @@ jobs:
       - name: Terraform Init
         run: terraform init
         working-directory: ./infra/remote # Path to your Terraform subdirectory
-      - name: Terraform Import
-        run:  |
-          echo "First command"
-          terraform import aws_iam_role.sagemaker_role ${{ secrets.SAGE_MAKER_ARN }}
-          terraform import aws_db_subnet_group.rds_subnet_group ${{ secrets.RDS_SUBNET_ARN }}
 
-
-        working-directory: ./infra/remote # Path to your Terraform subdirectory
 
       - name: Terraform Plan
         run: terraform plan -out=tfplan
