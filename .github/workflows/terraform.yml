@@ -26,20 +26,19 @@ jobs:
         uses: hashicorp/setup-terraform@v3
         with:
           terraform_version: 1.5.0 # Specify your desired Terraform version
-
+      - name: Set up Terraform plugin cache directory
+        run: echo "TF_PLUGIN_CACHE_DIR=$HOME/.terraform.d/plugin-cache/" >> $GITHUB_ENV
+      - name: Cache Terraform plugins
+        uses: actions/cache@v4
+        with:
+          path: ~/.terraform.d/plugin-cache/
+          key: ${{ runner.os }}-terraform-${{ hashFiles('**/.terraform.lock.hcl') }}
+          restore-keys: |
+            ${{ runner.os }}-terraform-
       - name: Terraform Init
         run: terraform init
         working-directory: ./infra/remote # Path to your Terraform subdirectory
-      - name: Terraform Destroy
-        run: terraform destroy
-        working-directory: ./infra/remote
-        env:
-          # Define any necessary environment variables for your Terraform deployment
-          TF_VAR_region: ${{ secrets.REGION }} # Map GitHub secret to Terraform variable
-          TF_VAR_db_username: ${{ secrets.DB_USERNAME }} # Map GitHub secret to Terraform variable
-          TF_VAR_db_password: ${{ secrets.DB_PASSWORD }} # Map GitHub secret to Terraform variable
-          TF_VAR_db_name: ${{ secrets.DB_NAME }} # Map GitHub secret to Terraform variable
-          TF_VAR_bucket_name: ${{ secrets.BUCKET_NAME }} # Map GitHub secret to Terraform variable
+
 
       - name: Terraform Plan
         run: terraform plan -out=tfplan
