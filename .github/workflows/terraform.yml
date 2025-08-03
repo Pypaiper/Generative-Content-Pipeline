@@ -40,8 +40,7 @@ jobs:
         working-directory: ./infra/remote # Path to your Terraform subdirectory
 
       - name: Terraform Plan
-        run: terraform import aws_s3_bucket.my_bucket $TF_VAR_bucket_name &&
-            terraform plan -out=tfplan
+        run: terraform plan -out=tfplan
         working-directory: ./infra/remote
         env:
           # Define any necessary environment variables for your Terraform deployment
