@@ -10,4 +10,3 @@ infra/remote/terraform.tfstate
 infra/remote/terraform.tfstate.backup
 infra/remote/.terraform.lock.hcl
 
-

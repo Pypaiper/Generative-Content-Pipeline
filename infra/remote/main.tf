@@ -1,7 +1,9 @@
 
+
 provider "aws" {
   region = var.region # Example for AWS, replace with your desired region
 }
+
 
 
 resource "random_string" "suffix" {
@@ -11,6 +13,7 @@ resource "random_string" "suffix" {
   lower   = true # Include lowercase letters
   numeric = true # Include numbers
 }
+
 
 
 
@@ -54,7 +57,9 @@ resource "aws_s3_bucket" "my_bucket" {
 # Security group for the SageMaker notebook instance
 resource "aws_security_group" "sagemaker_sg" {
   vpc_id      = aws_vpc.main.id
+
   name        = "sagemaker-security-group-${random_string.suffix.result}"
+
   description = "Allow traffic from SageMaker to RDS"
 
   ingress {
@@ -80,6 +85,7 @@ resource "aws_security_group" "sagemaker_sg" {
 # Security group for the RDS instance
 resource "aws_security_group" "rds_sg" {
   vpc_id      = aws_vpc.main.id
+
   description = "Allow traffic to RDS from SageMaker"
   name        = "rds-security-group-${random_string.suffix.result}"
 
@@ -106,6 +112,7 @@ resource "aws_security_group" "rds_sg" {
 # DB Subnet Group for RDS
 resource "aws_db_subnet_group" "rds_subnet_group" {
   name        = "rds-subnet-group-${random_string.suffix.result}"
+
   subnet_ids  = aws_subnet.private[*].id
   description = "Subnet group for RDS instance"
   tags = {
@@ -138,6 +145,7 @@ resource "aws_db_instance" "rds_instance" {
 resource "aws_iam_role" "sagemaker_role" {
   name        = "sagemaker-notebook-role-${random_string.suffix.result}"
 
+
   assume_role_policy = jsonencode({
     Version = "2012-10-17"
     Statement = [
@@ -161,8 +169,10 @@ resource "aws_iam_role" "sagemaker_role" {
 
 # Define the IAM policy for S3 access
 resource "aws_iam_policy" "sagemaker_s3_policy" {
+
   description = "Allows SageMaker to access S3 for data and model artifacts."
   name        = "sagemaker-s3-access-policy-${random_string.suffix.result}"
+
 
   policy = jsonencode({
     Version = "2012-10-17"
@@ -201,13 +211,14 @@ resource "aws_sagemaker_notebook_instance_lifecycle_configuration" "example" {
   name        = "my-lifecycle-config-${random_string.suffix.result}"
 
   on_start ="CiMhL2Jpbi9iYXNoCmV4cG9ydCBEQl9OQU1FPWFpNWp6Z2cwY3MKZXhwb3J0IERCX1VTRVJOQU1FPUFrM1k5ZDhiT1gKZXhwb3J0IERCX1BBU1NXT1JEPWpta29Sc1Q0VkUK"
+
 }
 
 
 # SageMaker Notebook Instance
 resource "aws_sagemaker_notebook_instance" "sagemaker_notebook" {
-  name        = "my-sagemaker-notebook-${random_string.suffix.result}"
 
+  name        = "my-sagemaker-notebook-${random_string.suffix.result}"
   instance_type        = "ml.t2.medium"
   role_arn             = aws_iam_role.sagemaker_role.arn
   subnet_id            = aws_subnet.sagemaker_private_subnet.id
