@@ -6,13 +6,6 @@ provider "aws" {
 
 
 
-resource "random_string" "suffix" {
-  length  = 16 # Specify the desired length of the string
-  special = false # Set to false to exclude special characters (only alphanumeric)
-  upper   = false # Include uppercase letters
-  lower   = true # Include lowercase letters
-  numeric = true # Include numbers
-}
 
 
 
@@ -46,10 +39,6 @@ resource "aws_subnet" "sagemaker_private_subnet" {
 
 resource "aws_s3_bucket" "my_bucket" {
   bucket = var.bucket_name
-
-  lifecycle {
-    prevent_destroy = true
-  }
 }
 
 
@@ -58,7 +47,7 @@ resource "aws_s3_bucket" "my_bucket" {
 resource "aws_security_group" "sagemaker_sg" {
   vpc_id      = aws_vpc.main.id
 
-  name        = "sagemaker-security-group-${random_string.suffix.result}"
+  name        = "sagemaker-security-group"
 
   description = "Allow traffic from SageMaker to RDS"
 
@@ -87,7 +76,7 @@ resource "aws_security_group" "rds_sg" {
   vpc_id      = aws_vpc.main.id
 
   description = "Allow traffic to RDS from SageMaker"
-  name        = "rds-security-group-${random_string.suffix.result}"
+  name        = "rds-security-group"
 
   ingress {
     from_port   = 3306 # Your RDS database port (e.g., PostgreSQL)
@@ -111,7 +100,7 @@ resource "aws_security_group" "rds_sg" {
 
 # DB Subnet Group for RDS
 resource "aws_db_subnet_group" "rds_subnet_group" {
-  name        = "rds-subnet-group-${random_string.suffix.result}"
+  name        = "rds-subnet-group"
 
   subnet_ids  = aws_subnet.private[*].id
   description = "Subnet group for RDS instance"
@@ -143,7 +132,7 @@ resource "aws_db_instance" "rds_instance" {
 
 
 resource "aws_iam_role" "sagemaker_role" {
-  name        = "sagemaker-notebook-role-${random_string.suffix.result}"
+  name        = "sagemaker-notebook-role"
 
 
   assume_role_policy = jsonencode({
@@ -171,7 +160,7 @@ resource "aws_iam_role" "sagemaker_role" {
 resource "aws_iam_policy" "sagemaker_s3_policy" {
 
   description = "Allows SageMaker to access S3 for data and model artifacts."
-  name        = "sagemaker-s3-access-policy-${random_string.suffix.result}"
+  name        = "sagemaker-s3-access-policy"
 
 
   policy = jsonencode({
@@ -208,7 +197,7 @@ resource "aws_iam_role_policy_attachment" "sagemaker_s3_attachment" {
 
 
 resource "aws_sagemaker_notebook_instance_lifecycle_configuration" "example" {
-  name        = "my-lifecycle-config-${random_string.suffix.result}"
+  name        = "my-lifecycle-config"
 
   on_start ="CiMhL2Jpbi9iYXNoCmV4cG9ydCBEQl9OQU1FPWFpNWp6Z2cwY3MKZXhwb3J0IERCX1VTRVJOQU1FPUFrM1k5ZDhiT1gKZXhwb3J0IERCX1BBU1NXT1JEPWpta29Sc1Q0VkUK"
 
@@ -218,7 +207,7 @@ resource "aws_sagemaker_notebook_instance_lifecycle_configuration" "example" {
 # SageMaker Notebook Instance
 resource "aws_sagemaker_notebook_instance" "sagemaker_notebook" {
 
-  name        = "my-sagemaker-notebook-${random_string.suffix.result}"
+  name        = "my-sagemaker-notebook"
   instance_type        = "ml.t2.medium"
   role_arn             = aws_iam_role.sagemaker_role.arn
   subnet_id            = aws_subnet.sagemaker_private_subnet.id
