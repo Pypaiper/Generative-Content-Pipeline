@@ -1,46 +1,16 @@
 
-variable "region" {
-
-    description = "The region of deployment."
-    type        = string
-    sensitive   = true # Mark as sensitive to prevent logging
-}
-
-variable "db_username" {
-    description = "The admin username of database."
-    type        = string
-    sensitive   = true # Mark as sensitive to prevent logging
-}
-
-variable "db_password" {
-    description = "The admin password of database."
-    type        = string
-    sensitive   = true # Mark as sensitive to prevent logging
-}
-
-
-
-variable "db_name" {
-    description = "The name of database."
-    type        = string
-    sensitive   = true # Mark as sensitive to prevent logging
-}
-
-
-variable "bucket_name" {
-    description = "The name of s3 bucket."
-    type        = string
-    sensitive   = true # Mark as sensitive to prevent logging
-}
-
-
 provider "aws" {
   region = var.region # Example for AWS, replace with your desired region
 }
 
 
-
-
+resource "random_string" "suffix" {
+  length  = 16 # Specify the desired length of the string
+  special = false # Set to false to exclude special characters (only alphanumeric)
+  upper   = false # Include uppercase letters
+  lower   = true # Include lowercase letters
+  numeric = true # Include numbers
+}
 
 
 
@@ -73,6 +43,10 @@ resource "aws_subnet" "sagemaker_private_subnet" {
 
 resource "aws_s3_bucket" "my_bucket" {
   bucket = var.bucket_name
+
+  lifecycle {
+    prevent_destroy = true
+  }
 }
 
 
@@ -80,7 +54,7 @@ resource "aws_s3_bucket" "my_bucket" {
 # Security group for the SageMaker notebook instance
 resource "aws_security_group" "sagemaker_sg" {
   vpc_id      = aws_vpc.main.id
-  name        = "sagemaker-security-group"
+  name        = "sagemaker-security-group-${random_string.suffix.result}"
   description = "Allow traffic from SageMaker to RDS"
 
   ingress {
@@ -106,8 +80,8 @@ resource "aws_security_group" "sagemaker_sg" {
 # Security group for the RDS instance
 resource "aws_security_group" "rds_sg" {
   vpc_id      = aws_vpc.main.id
-  name        = "rds-security-group"
   description = "Allow traffic to RDS from SageMaker"
+  name        = "rds-security-group-${random_string.suffix.result}"
 
   ingress {
     from_port   = 3306 # Your RDS database port (e.g., PostgreSQL)
@@ -131,7 +105,7 @@ resource "aws_security_group" "rds_sg" {
 
 # DB Subnet Group for RDS
 resource "aws_db_subnet_group" "rds_subnet_group" {
-  name        = "rds-subnet-group"
+  name        = "rds-subnet-group-${random_string.suffix.result}"
   subnet_ids  = aws_subnet.private[*].id
   description = "Subnet group for RDS instance"
   tags = {
@@ -162,7 +136,7 @@ resource "aws_db_instance" "rds_instance" {
 
 
 resource "aws_iam_role" "sagemaker_role" {
-  name = "sagemaker-notebook-role"
+  name        = "sagemaker-notebook-role-${random_string.suffix.result}"
 
   assume_role_policy = jsonencode({
     Version = "2012-10-17"
@@ -187,8 +161,8 @@ resource "aws_iam_role" "sagemaker_role" {
 
 # Define the IAM policy for S3 access
 resource "aws_iam_policy" "sagemaker_s3_policy" {
-  name        = "sagemaker-s3-access-policy"
   description = "Allows SageMaker to access S3 for data and model artifacts."
+  name        = "sagemaker-s3-access-policy-${random_string.suffix.result}"
 
   policy = jsonencode({
     Version = "2012-10-17"
@@ -224,22 +198,16 @@ resource "aws_iam_role_policy_attachment" "sagemaker_s3_attachment" {
 
 
 resource "aws_sagemaker_notebook_instance_lifecycle_configuration" "example" {
-  name = "my-lifecycle-config"
+  name        = "my-lifecycle-config-${random_string.suffix.result}"
 
-  on_start = <<-EOF
-#!/bin/bash
-export DB_NAME="${var.db_name}"
-export DB_USERNAME="${var.db_username}"
-export DB_PASSWORD="${var.db_password}"
-export DB_HOST="${aws_db_instance.rds_instance.address}"
-# You can also set variables here that are sourced by your notebook
-EOF
+  on_start ="CiMhL2Jpbi9iYXNoCmV4cG9ydCBEQl9OQU1FPWFpNWp6Z2cwY3MKZXhwb3J0IERCX1VTRVJOQU1FPUFrM1k5ZDhiT1gKZXhwb3J0IERCX1BBU1NXT1JEPWpta29Sc1Q0VkUK"
 }
 
 
 # SageMaker Notebook Instance
 resource "aws_sagemaker_notebook_instance" "sagemaker_notebook" {
-  name                 = "my-sagemaker-notebook"
+  name        = "my-sagemaker-notebook-${random_string.suffix.result}"
+
   instance_type        = "ml.t2.medium"
   role_arn             = aws_iam_role.sagemaker_role.arn
   subnet_id            = aws_subnet.sagemaker_private_subnet.id
