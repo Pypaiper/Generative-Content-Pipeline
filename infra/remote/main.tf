@@ -1,10 +1,18 @@
 
 
+
+
 provider "aws" {
   region = var.region # Example for AWS, replace with your desired region
 }
 
-
+terraform {
+  backend "s3" {
+    bucket = "terraform-state-bucket-keeper"
+    key    = "state.tfstate"
+    region =  "us-west-2"
+  }
+}
 
 
 
