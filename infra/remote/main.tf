@@ -236,6 +236,7 @@ output "rds_endpoint" {
 output "sagemaker_notebook_url" {
   value = "${aws_sagemaker_notebook_instance.sagemaker_notebook.name}.notebook.${var.region}.sagemaker.aws"
   description = "The URL of the SageMaker notebook instance."
+  sensitive = true
 }
 
 
