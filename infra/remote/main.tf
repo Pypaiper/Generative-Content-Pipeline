@@ -207,7 +207,7 @@ resource "aws_iam_role_policy_attachment" "sagemaker_s3_attachment" {
 resource "aws_sagemaker_notebook_instance_lifecycle_configuration" "example" {
   name        = "my-lifecycle-config"
 
-  on_start ="CiMhL2Jpbi9iYXNoCmV4cG9ydCBEQl9OQU1FPWFpNWp6Z2cwY3MKZXhwb3J0IERCX1VTRVJOQU1FPUFrM1k5ZDhiT1gKZXhwb3J0IERCX1BBU1NXT1JEPWpta29Sc1Q0VkUK"
+  on_start ="CiMhL2Jpbi9iYXNoCnNldCAtZXgKdG91Y2ggL2V0Yy9wcm9maWxlLmQvanVweXRlci1lbnYuc2gKZWNobyAiZXhwb3J0IERCX05BTUU9J2FpNWp6Z2cwY3MnIiA+PiAvZXRjL3Byb2ZpbGUuZC9qdXB5dGVyLWVudi5zaAplY2hvICJleHBvcnQgREJfVVNFUk5BTUU9J0FrM1k5ZDhiT1gnIiA+PiAvZXRjL3Byb2ZpbGUuZC9qdXB5dGVyLWVudi5zaAplY2hvICJleHBvcnQgREJfUEFTU1dPUkQ9J2pta29Sc1Q0VkUnIiA+PiAvZXRjL3Byb2ZpbGUuZC9qdXB5dGVyLWVudi5zaAplY2hvICJleHBvcnQgREJfUE9SVD0nMzMwNiciID4+IC9ldGMvcHJvZmlsZS5kL2p1cHl0ZXItZW52LnNoCg=="
 
 }
 
@@ -236,7 +236,6 @@ output "rds_endpoint" {
 output "sagemaker_notebook_url" {
   value = "${aws_sagemaker_notebook_instance.sagemaker_notebook.name}.notebook.${var.region}.sagemaker.aws"
   description = "The URL of the SageMaker notebook instance."
-  sensitive=true
 }
 
 
