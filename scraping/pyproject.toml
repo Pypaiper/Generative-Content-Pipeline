@@ -1,6 +1,6 @@
 [project]
-name = "scraping"
-version = "0.1.0"
+name = "generative-content-pipeline-scraping"
+version = "0.1.1"
 description = "Module which provides scraping logic and stores data in the chosen infrastructure"
 readme = "README.md"
 dependencies = [
@@ -30,4 +30,10 @@ requires = ["setuptools>=61.0.0", "wheel"]
 build-backend = "setuptools.build_meta"
 
 [tool.setuptools]
-packages = ["scraping"]
+packages = ["generative_content_pipeline_scraping"]
+
+[[tool.uv.index]]
+name = "testpypi"
+url = "https://test.pypi.org/simple/"
+publish-url = "https://test.pypi.org/legacy/"
+explicit = true
