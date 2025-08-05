@@ -10,7 +10,6 @@ on:
 jobs:
   terraform:
     runs-on: ubuntu-latest
-    needs: lint # This job will only run after the 'lint' job completes
     environment: terraform # If using an environment secret
     steps:
       - name: Checkout repository code
