@@ -167,7 +167,7 @@ def download_and_extract_zip(url, extract_path="."):
 engine = create_async_engine(connection_url(asyncronous=True), echo=False)
 
 async_session = async_sessionmaker(engine, expire_on_commit=False)
-
+s3_client = None
 try:
     # Try to connect to s3 as though we are in aws environment
     # (credentials aren't present or necessary here)
