@@ -4,7 +4,7 @@ variable "region" {
     sensitive   = true # Mark as sensitive to prevent logging
 }
 
-variable "db_username" {
+variable "db_user" {
     description = "The admin username of database."
     type        = string
     sensitive   = true # Mark as sensitive to prevent logging
@@ -22,8 +22,15 @@ variable "db_name" {
     sensitive   = true # Mark as sensitive to prevent logging
 }
 
+variable "db_port" {
+    description = "The name of database."
+    type        = string
+    sensitive   = true # Mark as sensitive to prevent logging
+}
+
 variable "bucket_name" {
     description = "The name of s3 bucket."
     type        = string
     sensitive   = true # Mark as sensitive to prevent logging
 }
+

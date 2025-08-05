@@ -167,10 +167,17 @@ def download_and_extract_zip(url, extract_path="."):
 engine = create_async_engine(connection_url(asyncronous=True), echo=False)
 
 async_session = async_sessionmaker(engine, expire_on_commit=False)
-
-s3_client = boto3.client(
-    "s3",
-    endpoint_url=SETTINGS.S3_HOST,
-    aws_access_key_id=SETTINGS.AWS_ACCESS_KEY_ID,
-    aws_secret_access_key=SETTINGS.AWS_SECRET_ACCESS_KEY,
-)
+s3_client = None
+try:
+    # Try to connect to s3 as though we are in aws environment
+    # (credentials aren't present or necessary here)
+    s3_client = boto3.client("s3")
+except ImportError:
+    # Not in aws use local credentials
+    # This environment may be a docker notebook with LocalStack provided s3
+    s3_client = boto3.client(
+        "s3",
+        endpoint_url=SETTINGS.S3_HOST,
+        aws_access_key_id=SETTINGS.AWS_ACCESS_KEY_ID,
+        aws_secret_access_key=SETTINGS.AWS_SECRET_ACCESS_KEY,
+    )
