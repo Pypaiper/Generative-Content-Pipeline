@@ -28,6 +28,7 @@ jobs:
         env:
           TWINE_USERNAME: "__token__"
           TWINE_PASSWORD: ${{ secrets.PYPI_TOKEN }}
+        working-directory: ./scraping
         run: |
           python -m build
           twine check dist/* twine upload dist/*
