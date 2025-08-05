@@ -4,8 +4,8 @@ on:
   pull_request:
     types: [opened, synchronize, reopened]
     paths:
-      - 'opensora' # Trigger only on changes within this subdirectory
-
+      - 'opensora/**' # Trigger only on changes within this subdirectory
+      - '.github/workflows/push.yml'
 jobs:
   build:
     runs-on: ubuntu-latest
