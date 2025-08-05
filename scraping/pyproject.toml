@@ -1,6 +1,6 @@
 [project]
 name = "generative-content-pipeline-scraping"
-version = "0.1.4"
+version = "0.1.5"
 description = "Module which provides scraping logic and stores data in the chosen infrastructure"
 readme = "README.md"
 dependencies = [
