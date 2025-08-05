@@ -4,7 +4,7 @@ variable "region" {
     sensitive   = true # Mark as sensitive to prevent logging
 }
 
-variable "db_username" {
+variable "db_user" {
     description = "The admin username of database."
     type        = string
     sensitive   = true # Mark as sensitive to prevent logging
