@@ -229,6 +229,8 @@ resource "aws_sagemaker_notebook_instance" "sagemaker_notebook" {
     DB_USER = var.db_user
     DB_PASSWORD = var.db_password
     BUCKET_NAME = var.bucket_name
+  }
+}
 
 
 output "rds_endpoint" {
