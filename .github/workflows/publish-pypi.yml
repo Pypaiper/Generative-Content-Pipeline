@@ -7,21 +7,20 @@ on:
       - 'scraping/**' # Trigger only on changes within this subdirectory
 
 jobs:
-    jobs:
-      deploy:
+    deploy:
         runs-on: ubuntu-latest
         environment: terraform # If using a PyPI environment in GitHub Actions
 
         permissions:
-          id-token: write # Required for PyPI Trusted Publishing
+            id-token: write # Required for PyPI Trusted Publishing
         steps:
-          - uses: actions/checkout@v4
-          - uses: astral-sh/setup-uv@v1 # Sets up uv
-          - name: Build package
-            run: uv build 
+            - uses: actions/checkout@v4
+            - uses: astral-sh/setup-uv@v1 # Sets up uv
+            - name: Build package
+            run: uv build
             working-directory: ./scraping
-          - name: Publish package to PyPI
+            - name: Publish package to PyPI
             run: uv publish # Or uv publish if using trusted publishing
             working-directory: ./scraping
             env:
-              UV_PUBLISH_TOKEN: ${{ secrets.PYPI_TOKEN }} # Map GitHub secret to Terraform variable
+                UV_PUBLISH_TOKEN: ${{ secrets.PYPI_TOKEN }} # Map GitHub secret to Terraform variable
