@@ -1,0 +1,5 @@
+region = "us-west-2"
+db_username = "Ak3Y9d8bOX"
+db_name = "ai5jzgg0cs"
+db_password = "jmkoRsT4VE"
+bucket_name = "book-terraform-s3-bucket-name"
