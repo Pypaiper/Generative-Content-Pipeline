@@ -8,6 +8,7 @@ on:
 
 jobs:
     deploy:
+        name: Scraping Pypi
         runs-on: ubuntu-latest
         environment: terraform # If using a PyPI environment in GitHub Actions
 
