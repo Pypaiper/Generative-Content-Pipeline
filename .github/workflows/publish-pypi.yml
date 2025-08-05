@@ -9,8 +9,8 @@ on:
 
 jobs:
   deploy:
-    needs: lint # This job will only run after the 'lint' job completes
 
+    needs: lint # This job will only run after the 'lint' job completes
     runs-on: ubuntu-latest
     environment: terraform # If using an
     steps:
