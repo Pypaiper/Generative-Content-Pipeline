@@ -171,7 +171,7 @@ async_session = async_sessionmaker(engine, expire_on_commit=False)
 try:
     # Try to connect to s3 as though we are in aws environment
     # (credentials aren't present or necessary here)
-    s3 = boto3.client("s3")
+    s3_client = boto3.client("s3")
 except ImportError:
     # Not in aws use local credentials
     # This environment may be a docker notebook with LocalStack provided s3
