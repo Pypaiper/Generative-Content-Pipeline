@@ -31,4 +31,5 @@ jobs:
         working-directory: ./scraping
         run: |
           python -m build
-          twine check dist/* twine upload dist/*
+          twine check dist/*
+          twine upload dist/*
