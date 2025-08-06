@@ -9,7 +9,6 @@ RUN conda install mamba -n base -c conda-forge && \
     mamba install -y conda-forge::cmake && \
     mamba install -n base conda-forge::conda-pypi && \
     mamba install -c conda-forge pyproject2conda && \
-    
     # Create SORA env
     git clone -b master https://github.com/Pypaiper/Generative-Content-Pipeline.git && \
     cd Generative-Content-Pipeline && \
