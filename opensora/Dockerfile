@@ -15,8 +15,8 @@ RUN conda install mamba -n base -c conda-forge && \
     cd Generative-Content-Pipeline && \
     pyproject2conda yaml -f opensora/pyproject.toml --python 3.10 -o environment.yaml -e dev --name opensora && \
     mamba env create --file environment.yaml && \
-    # install tensornvme
     cd .. && \
+    # install tensornvme
     git clone https://github.com/hpcaitech/TensorNVMe.git && \
     cd TensorNVMe && \
     pip install -r requirements.txt && \

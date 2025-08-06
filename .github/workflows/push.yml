@@ -24,14 +24,16 @@ jobs:
     - name: Login to Amazon ECR
       id: login-ecr
       uses: aws-actions/amazon-ecr-login@v1
-
-    - name: Build, tag, and push image to Amazon ECR
+    - name: Build and push
+      uses: docker/build-push-action@v6
+      with:
+        context: ./opensora
+        push: true
+        tags: "$ECR_REGISTRY/$ECR_REPOSITORY:latest"
+        cache-from: type=gha
+        cache-to: type=gha,mode=max
+        github-token: ${{ secrets.MY_CUSTOM_TOKEN }}
       env:
         ECR_REGISTRY: ${{ steps.login-ecr.outputs.registry }}
         ECR_REPOSITORY: ${{ secrets.REGION }}
         IMAGE_TAG: latest
-      working-directory: ./opensora # Path to your Terraform subdirectory
-
-      run: |
-        docker build -t $ECR_REGISTRY/$ECR_REPOSITORY:$IMAGE_TAG .
-        docker push $ECR_REGISTRY/$ECR_REPOSITORY:$IMAGE_TAG
