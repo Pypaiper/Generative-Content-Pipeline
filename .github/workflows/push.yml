@@ -26,8 +26,9 @@ jobs:
       uses: aws-actions/amazon-ecr-login@v1
     - name: Build and push
       uses: docker/build-push-action@v6
+      working-directory: ./opensora
       with:
-        context: ./opensora
+        context: .
         push: true
         tags: "$ECR_REGISTRY/$ECR_REPOSITORY:latest"
         cache-from: type=gha
