@@ -3,6 +3,7 @@ FROM hpcaitech/pytorch-cuda:1.11.0-11.3.0
 COPY ./opensora /config/workspace/opensora/opensora
 COPY ./pyproject.toml /config/workspace/opensora/pyproject.toml
 
+
 # install dependencies
 RUN conda install mamba -n base -c conda-forge && \
 
