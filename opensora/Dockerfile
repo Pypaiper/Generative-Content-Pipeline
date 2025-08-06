@@ -19,7 +19,7 @@ RUN conda install mamba -n base -c conda-forge && \
     . /opt/conda/etc/profile.d/conda.sh && conda activate opensora && \
     # Extra dependencies per opensora's readme
     pip3 install xformers==0.0.27.post2 --index-url https://download.pytorch.org/whl/cu121 triton diffusers && \
-    pip3 install flash_attn==2.7.4.post1 --no-build-isolation
+    pip3 install flash_attn==2.7.4.post1 --no-build-isolation && \
     cd .. && \
     # install tensornvme
     git clone https://github.com/hpcaitech/TensorNVMe.git && \
