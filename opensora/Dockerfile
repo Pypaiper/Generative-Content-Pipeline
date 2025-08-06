@@ -5,14 +5,11 @@ COPY ./pyproject.toml /config/workspace/opensora/pyproject.toml
 
 # install dependencies
 RUN conda install mamba -n base -c conda-forge && \
-    mamba config --add channels pytorch && \
-    mamba config --add channels defaults && \
-    mamba config --add channels  conda-forge && \
-    mamba config --set channel_priority strict && \
+
     mamba install -y conda-forge::cmake && \
     mamba install -n base conda-forge::conda-pypi && \
     mamba install -c conda-forge pyproject2conda && \
-    mamba update mamba && conda update --all && \
+    
     # Create SORA env
     git clone -b master https://github.com/Pypaiper/Generative-Content-Pipeline.git && \
     cd Generative-Content-Pipeline && \
