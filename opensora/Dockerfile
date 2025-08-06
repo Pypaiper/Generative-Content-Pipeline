@@ -4,18 +4,20 @@ COPY ./opensora /config/workspace/opensora/opensora
 COPY ./pyproject.toml /config/workspace/opensora/pyproject.toml
 
 # install dependencies
-RUN conda install -y cmake && \
-    conda install -n base conda-forge::conda-pypi && \
-    conda install -c conda-forge pyproject2conda && \
-    conda update conda && conda update --all && \
+RUN conda install mamba -n base -c conda-forge && \
+    mamba config --add channels pytorch && \
+    mamba config --add channels defaults && \
+    mamba config --add channels  conda-forge && \
+    mamba config --set channel_priority strict && \
+    mamba install -y conda-forge::cmake && \
+    mamba install -n base conda-forge::conda-pypi && \
+    mamba install -c conda-forge pyproject2conda && \
+    mamba update mamba && conda update --all && \
     # Create SORA env
     git clone -b master https://github.com/Pypaiper/Generative-Content-Pipeline.git && \
     cd Generative-Content-Pipeline && \
     pyproject2conda yaml -f opensora/pyproject.toml --python 3.10 -o environment.yaml -e dev --name opensora && \
-    conda config --add channels pytorch && \
-    conda config --add channels defaults && \
-    conda config --add channels  conda-forge && \
-    conda env create --file environment.yaml && \
+    mamba env create --file environment.yaml && \
     # install tensornvme
     cd .. && \
     git clone https://github.com/hpcaitech/TensorNVMe.git && \
