@@ -10,11 +10,16 @@ RUN conda install mamba -n base -c conda-forge && \
     mamba install -n base conda-forge::conda-pypi && \
     mamba install -c conda-forge pyproject2conda && \
     
-    # Create SORA env
+    # Create OPENSORA env
     git clone -b master https://github.com/Pypaiper/Generative-Content-Pipeline.git && \
     cd Generative-Content-Pipeline && \
     pyproject2conda yaml -f opensora/pyproject.toml --python 3.10 -o environment.yaml -e dev --name opensora && \
     mamba env create --file environment.yaml && \
+    ## activate env
+    . /opt/conda/etc/profile.d/conda.sh && conda activate opensora && \
+    # Extra dependencies per opensora's readme
+    pip3 install xformers==0.0.27.post2 --index-url https://download.pytorch.org/whl/cu121 triton diffusers && \
+    pip3 install flash_attn==2.7.4.post1 --no-build-isolation
     cd .. && \
     # install tensornvme
     git clone https://github.com/hpcaitech/TensorNVMe.git && \
