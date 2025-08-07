@@ -19,7 +19,7 @@ RUN micromamba install -y conda-forge::git && \
     micromamba activate opensora  && \
     micromamba install -c "nvidia/label/cuda-12.1.0" cuda-nvcc&& \
     pip3 install xformers==0.0.27.post2 --index-url https://download.pytorch.org/whl/cu121 triton diffusers && \
-    pip3 install flash_attn==2.7.4.post1 --no-build-isolation 
+    pip3 install flash_attn==2.7.4.post1 --no-build-isolation && \
     cd .. && \
     # install tensornvme
     micromamba run git clone https://github.com/hpcaitech/TensorNVMe.git && \
