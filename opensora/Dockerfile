@@ -1,20 +1,18 @@
-FROM hpcaitech/pytorch-cuda:1.11.0-11.3.0
+FROM mambaorg/micromamba:latest
 
 COPY ./opensora /config/workspace/opensora/opensora
 COPY ./pyproject.toml /config/workspace/opensora/pyproject.toml
 
 
 # install dependencies
-RUN conda install mamba -n base -c conda-forge && \
-
-    mamba install -y conda-forge::cmake && \
-    mamba install -n base conda-forge::conda-pypi && \
-    mamba install -c conda-forge pyproject2conda && \
+RUN micromamba install -y conda-forge::cmake && \
+    micromamba install -n base conda-forge::conda-pypi && \
+    micromamba install -c conda-forge pyproject2conda && \
     # Create SORA env
     git clone -b master https://github.com/Pypaiper/Generative-Content-Pipeline.git && \
     cd Generative-Content-Pipeline && \
     pyproject2conda yaml -f opensora/pyproject.toml --python 3.10 -o environment.yaml -e dev --name opensora && \
-    mamba env create --file environment.yaml && \
+    micromamba env create --file environment.yaml && \
     ## activate env
     . /opt/conda/etc/profile.d/conda.sh && conda activate opensora && \
     # Extra dependencies per opensora's readme
