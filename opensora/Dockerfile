@@ -1,12 +1,29 @@
-FROM mambaorg/micromamba:latest
+FROM nvidia/cuda:12.1.1-cudnn8-devel-ubuntu22.04
+
+# Install necessary dependencies for micromamba
+ENV DEBIAN_FRONTEND=noninteractive
+RUN apt-get update && apt-get install -y --no-install-recommends \
+    build-essential \
+    wget \
+    curl \
+    git \
+    ca-certificates && \
+    apt-get clean && rm -rf /var/lib/apt/lists/*
+
+
+# Download and install micromamba
+RUN wget -qO- https://micro.mamba.pm/api/micromamba/linux-64/latest | tar xvj -C /usr/local bin/micromamba
+
+# Add micromamba to PATH
+ENV PATH="/usr/local/bin:$PATH"
+
+
 
 COPY ./opensora /config/workspace/opensora/opensora
 COPY ./pyproject.toml /config/workspace/opensora/pyproject.toml
 
-
 # install dependencies
 RUN micromamba install -y conda-forge::git && \
-    micromamba install -y conda-forge::cmake && \
     micromamba install -y conda-forge::conda-pypi && \
     micromamba install -c conda-forge pyproject2conda && \
     # Create SORA env
@@ -14,18 +31,14 @@ RUN micromamba install -y conda-forge::git && \
     cd Generative-Content-Pipeline && \
     micromamba run pyproject2conda yaml -f opensora/pyproject.toml --python 3.10 -o environment.yaml -e dev --name opensora && \
     micromamba env create --file environment.yaml && \
-    ## activate env
-    eval "$(micromamba shell hook --shell bash)" && \
-    micromamba activate opensora  && \
-    micromamba install -c "nvidia/label/cuda-12.1.0" cuda-nvcc&& \
-    pip3 install xformers==0.0.27.post2 --index-url https://download.pytorch.org/whl/cu121 triton diffusers && \
-    pip3 install flash_attn==2.7.4.post1 --no-build-isolation && \
-    cd .. && \
-    # install tensornvme
-    micromamba run git clone https://github.com/hpcaitech/TensorNVMe.git && \
+    ## activate env    micromamba run -n opensora pip3 install torch torchvision torchaudio --index-url https://download.pytorch.org/whl/cu124 && \
+    micromamba run -n opensora pip3 install xformers==0.0.27 --index-url https://download.pytorch.org/whl/cu121 triton diffusers && \
+    micromamba run -n opensora pip3 install flash_attn==2.7.4.post1 && \
+    # # Install tensornvme
+    micromamba run -n base git clone https://github.com/hpcaitech/TensorNVMe.git && \
+    micromamba install -n opensora -y conda-forge::cmake conda-forge::make  conda-forge::git && \
     cd TensorNVMe && \
-    pip install -r requirements.txt && \
-    pip install -v --no-cache-dir .
-
-RUN    cd /config/workspace/opensora && \
-    pip3 install -e . --no-deps
+    micromamba run -n opensora pip install . && \
+    cd /config/workspace/opensora && \
+    micromamba run -n opensora pip3 install --upgrade pip && \
+    micromamba run -n opensora pip3 install . 
