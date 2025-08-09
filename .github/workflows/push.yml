@@ -28,12 +28,6 @@ jobs:
       uses: docker/setup-buildx-action@v3
       with:
         buildkitd-flags: --debug
-    - name: Free up disk space
-      uses: jlumbroso/free-disk-space@main
-      with:
-        # Optional: Configure options to specify what to remove
-        # For example, to remove pre-cached tools:
-        tools-cache: true
     - name: Build and push
       uses: docker/build-push-action@v6
       with:
