@@ -15,10 +15,10 @@ jobs:
     - name: Check out code
       uses: actions/checkout@v2
       
-    - name: Install jq tool
+    - name: Install docker
       run: |
-        sudo apt-get update
-        sudo apt-get install docker
+        apt-get update
+        apt-get install docker
     - name: Configure AWS credentials
       uses: aws-actions/configure-aws-credentials@v3
       with:
