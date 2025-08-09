@@ -10,6 +10,7 @@ jobs:
   build:
     runs-on: self-hosted
     name: Build Image
+    needs: terraform
     environment: terraform 
     steps:
     - name: Check out code
@@ -39,5 +40,5 @@ jobs:
         # github-token: ${{ secrets.MY_CUSTOM_TOKEN }}
       env:
         ECR_REGISTRY: ${{ steps.login-ecr.outputs.registry }}
-        ECR_REPOSITORY: ${{ secrets.REGION }}
+        ECR_REPOSITORY: pypaiper_repository
         IMAGE_TAG: latest

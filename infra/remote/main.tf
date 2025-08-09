@@ -254,3 +254,12 @@ output "sagemaker_notebook_url" {
 
 
 
+resource "aws_ecr_repository" "pypaiper_repository" {
+  name = "pypaiper-repo"
+
+  # Optional: Add image scanning configuration
+  image_scanning_configuration {
+    scan_on_push = true
+  }
+
+}
