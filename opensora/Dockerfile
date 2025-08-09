@@ -36,6 +36,7 @@ COPY ./opensora /config/workspace/opensora/opensora
 COPY ./pyproject.toml /config/workspace/opensora/pyproject.toml
 # USER mambauser
 # install dependencies
+RUN df -h && sleep 10
 RUN micromamba install -y conda-forge::git && \
     micromamba run git clone -b master https://github.com/Pypaiper/Generative-Content-Pipeline.git && \
     micromamba run -n base git clone https://github.com/hpcaitech/TensorNVMe.git && \
