@@ -1,4 +1,5 @@
-FROM nvidia/cuda:12.1.1-devel-ubuntu20.04
+FROM hpcaitech/pytorch-cuda:2.1.0-12.1.0
+
 USER root
 # Install necessary dependencies for micromamba
 ENV DEBIAN_FRONTEND=noninteractive
@@ -28,15 +29,21 @@ RUN wget -qO- https://micro.mamba.pm/api/micromamba/linux-64/latest | tar xvj -C
 
 # Add micromamba to PATH
 ENV PATH="/usr/local/bin:$PATH"
-
+# RUN apt-get update && apt-get install -y nvidia-cuda-toolkit nvidia-container-runtime
 RUN apt purge -y wget curl && apt -y autoremove
 
+
+
+# RUN ls -l /usr/local/cuda/bin/ && sleep 10
 
 COPY ./opensora /config/workspace/opensora/opensora
 COPY ./pyproject.toml /config/workspace/opensora/pyproject.toml
 # USER mambauser
 # install dependencies
-RUN df -h && sleep 10
+
+# RUN du -h / && sleep 20
+    
+
 RUN micromamba install -y conda-forge::git && \
     micromamba run git clone -b master https://github.com/Pypaiper/Generative-Content-Pipeline.git && \
     micromamba run -n base git clone https://github.com/hpcaitech/TensorNVMe.git && \
