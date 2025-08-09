@@ -8,7 +8,7 @@ on:
       - '.github/workflows/push.yml'
 jobs:
   build:
-    runs-on: self-hosted
+    runs-on: { labels: [self-hosted] }
     name: Build Image
     environment: terraform 
     steps:
