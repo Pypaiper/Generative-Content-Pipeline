@@ -35,14 +35,14 @@ RUN apt purge -y wget curl && apt -y autoremove
 
 # USER mambauser
 # install environment and difficult dependency tensornvme
-COPY ./opensora/pyproject.toml  ./pyproject.toml 
+COPY ./pyproject.toml /config/workspace/opensora/pyproject.toml
 RUN micromamba install -y conda-forge::git && \
     micromamba run -n base git clone https://github.com/hpcaitech/TensorNVMe.git && \
     micromamba install -y conda-forge::conda-pypi && \
     micromamba install -c conda-forge pyproject2conda && \
     # Create SORA env
     cd Generative-Content-Pipeline && \
-    micromamba run pyproject2conda yaml -f ./pyproject.toml --python 3.10 -o environment.yaml -e dev --name opensora && \
+    micromamba run pyproject2conda yaml -f /config/workspace/opensora/pyproject.toml --python 3.10 -o environment.yaml -e dev --name opensora && \
     micromamba env create --file environment.yaml && \
     micromamba run -n opensora pip3 cache purge && \
     micromamba run -n opensora pip3 install xformers --index-url https://download.pytorch.org/whl/cu121 triton diffusers && \
@@ -55,7 +55,6 @@ RUN micromamba install -y conda-forge::git && \
 # Commands ran each merge
 # Copy local content and reinstall opensora package
 COPY ./opensora /config/workspace/opensora/opensora
-COPY ./pyproject.toml /config/workspace/opensora/pyproject.toml
 RUN cd /config/workspace/opensora && \
     micromamba run -n opensora pip3 install --upgrade pip && \
     micromamba run -n opensora pip3 install . 
