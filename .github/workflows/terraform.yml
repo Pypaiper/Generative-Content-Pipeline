@@ -87,15 +87,22 @@ jobs:
       uses: docker/setup-buildx-action@v3
       with:
         buildkitd-flags: --debug
+    - name: Cache Docker layers
+      uses: actions/cache@v3
+      with:
+        path: /tmp/.buildx-cache
+        key: ${{ runner.os }}-docker-buildx-${{ github.sha }}
+        restore-keys: |
+          ${{ runner.os }}-docker-buildx-
     - name: Build and push
       uses: docker/build-push-action@v6
       with:
         context: ./opensora
         push: true
         tags: "${{ env.ECR_REGISTRY }}/${{ env.ECR_REPOSITORY }}:latest"
-        # cache-from: type=gha
-        # cache-to: type=gha,mode=max
-        # github-token: ${{ secrets.MY_CUSTOM_TOKEN }}
+        cache-from: type=local,src=/tmp/.buildx-cache
+        cache-to: type=local,dest=/tmp/.buildx-cache,mode=max
+        github-token: ${{ secrets.BUILD_CACHE_TOKEN }}
       env:
         ECR_REGISTRY: ${{ steps.login-ecr.outputs.registry }}
         ECR_REPOSITORY: pypaiper-repo
