@@ -41,13 +41,10 @@ RUN micromamba install -y conda-forge::git && \
     micromamba install -y conda-forge::conda-pypi && \
     micromamba install -c conda-forge pyproject2conda && \
     # Create SORA env
-    cd Generative-Content-Pipeline && \
     micromamba run pyproject2conda yaml -f /config/workspace/opensora/pyproject.toml --python 3.10 -o environment.yaml -e dev --name opensora && \
     micromamba env create --file environment.yaml && \
     micromamba run -n opensora pip3 cache purge && \
     micromamba run -n opensora pip3 install xformers --index-url https://download.pytorch.org/whl/cu121 triton diffusers && \
-    cd .. && \
-    rm -rf Generative-Content-Pipeline && \
     micromamba install -n opensora -y conda-forge::cmake conda-forge::make  conda-forge::git && \
     micromamba run -n opensora pip3 install flash_attn==2.7.4.post1 && \
     cd TensorNVMe && \
