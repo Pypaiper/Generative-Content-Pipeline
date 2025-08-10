@@ -32,11 +32,9 @@ ENV PATH="/usr/local/bin:$PATH"
 RUN apt purge -y wget curl && apt -y autoremove
 
 
-COPY ./opensora /config/workspace/opensora/opensora
-COPY ./pyproject.toml /config/workspace/opensora/pyproject.toml
+
 # USER mambauser
-# install dependencies
-RUN df -h && sleep 10
+# install environment and difficult dependency tensornvme
 RUN micromamba install -y conda-forge::git && \
     micromamba run git clone -b master https://github.com/Pypaiper/Generative-Content-Pipeline.git && \
     micromamba run -n base git clone https://github.com/hpcaitech/TensorNVMe.git && \
@@ -53,7 +51,11 @@ RUN micromamba install -y conda-forge::git && \
     micromamba install -n opensora -y conda-forge::cmake conda-forge::make  conda-forge::git && \
     micromamba run -n opensora pip3 install flash_attn==2.7.4.post1 && \
     cd TensorNVMe && \
-    micromamba run -n opensora pip install . && \
-    cd /config/workspace/opensora && \
+    micromamba run -n opensora pip install .
+# Commands ran each merge
+# Copy local content and reinstall opensora package
+COPY ./opensora /config/workspace/opensora/opensora
+COPY ./pyproject.toml /config/workspace/opensora/pyproject.toml
+RUN cd /config/workspace/opensora && \
     micromamba run -n opensora pip3 install --upgrade pip && \
     micromamba run -n opensora pip3 install . 
