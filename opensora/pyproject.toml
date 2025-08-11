@@ -6,6 +6,9 @@ readme = "README.md"
 requires-python = ">=3.10"
 dependencies = [
   "torch==2.4.0",
+  "xformers",
+  "triton",
+  "diffusers",
   "torchvision==0.19.0",
   "colossalai>=0.4.4",
   "mmengine>=0.10.3",
@@ -35,6 +38,8 @@ dev = ["ipykernel"]
 colossalai = { pip = true }
 liger-kernel = { pip = true }
 opencv-python-headless = { pip = true }
+torch = { pip = true }
+
 
 [tool.uv.sources]
 torch = [
@@ -43,7 +48,12 @@ torch = [
 torchvision = [
   { index = "pytorch-cu121"}
 ]
-
+xformers = [
+  { index = "pytorch-cu121"}
+]
+colossalai = [
+  { index = "pytorch-cu121"}
+]
 
 [[tool.uv.index]]
 name = "pytorch-cu121"
