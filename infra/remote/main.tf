@@ -263,3 +263,53 @@ resource "aws_ecr_repository" "pypaiper_repository" {
   }
 
 }
+
+resource "aws_sagemaker_model" "my_sagemaker_model" {
+  name                = "my-custom-model"
+  execution_role_arn  = aws_iam_role.sagemaker_role.arn # IAM role for SageMaker
+  primary_container {
+    image = "${aws_ecr_repository.pypaiper_repository.repository_url}:latest" # ECR image URL
+  }
+}
+
+
+######### notebook with custom image
+
+resource "aws_sagemaker_image" "my_custom_image" {
+    image_name = "my-custom-sagemaker-image"
+    role_arn   = aws_iam_role.sagemaker_role.arn # IAM role for SageMaker
+    image_uri  = "${aws_ecr_repository.pypaiper_repository.repository_url}:latest" # Replace with your ECR URI
+}
+
+resource "aws_sagemaker_app_image_config" "my_custom_image_config" {
+  app_image_config_name = "my-custom-image-config"
+  kernel_gateway_image_config {
+    file_system_config {
+      default_user_gid = 1000
+      default_user_uid = 1000
+    }
+    kernel_specs {
+      display_name = "Python 3 (Custom)"
+      name         = "python3"
+    }
+  }
+}
+resource "aws_sagemaker_domain" "my_domain" {
+  domain_name = "my-sagemaker-domain"
+  auth_mode   = "IAM"
+  vpc_id      = aws_vpc.main.id
+  subnet_ids  = [aws_subnet.private.id]
+
+  default_user_settings {
+    execution_role = aws_iam_role.sagemaker_role.arn
+
+    kernel_gateway_app_settings {
+      custom_image {
+        app_image_config_name = aws_sagemaker_app_image_config.my_custom_image_config.app_image_config_name
+        image_name            = aws_sagemaker_image.my_custom_image.image_name
+        # image_version_number is optional, defaults to 0, which might not work. Consider setting it to 1 or higher if issues arise.
+        image_version_number = 1
+      }
+    }
+  }
+}
