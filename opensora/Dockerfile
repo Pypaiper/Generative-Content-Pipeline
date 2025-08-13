@@ -82,4 +82,4 @@ RUN cd /config/workspace/opensora && \
     micromamba run -n opensora pip3 install . 
 
 # Set default command for JupyterLab
-CMD ["micromamba", "run", "-n", "opensora", "jupyter-lab", "--ip=0.0.0.0", "--port=8888", "--no-browser", "--allow-root"]
+CMD ["micromamba", "run", "-n", "opensora", "jupyter-lab", "--ip=0.0.0.0", "--port=8888", "--no-browser"]

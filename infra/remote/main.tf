@@ -263,3 +263,41 @@ resource "aws_ecr_repository" "pypaiper_repository" {
   }
 
 }
+
+resource "aws_sagemaker_model" "my_sagemaker_model" {
+  name                = "my-custom-model"
+  execution_role_arn  = aws_iam_role.sagemaker_role.arn # IAM role for SageMaker
+  primary_container {
+    image = "${aws_ecr_repository.pypaiper_repository.repository_url}:latest" # ECR image URL
+  }
+}
+
+
+######### notebook with custom image
+
+resource "aws_sagemaker_image" "my_custom_image" {
+    image_name = "my-custom-sagemaker-image"
+    role_arn   = aws_iam_role.sagemaker_role.arn # IAM role for SageMaker
+    image_uri  = "${aws_ecr_repository.pypaiper_repository.repository_url}:latest" # Replace with your ECR URI
+}
+
+
+resource "aws_sagemaker_notebook_instance" "ml_sagemaker_notebook" {
+
+  name        = "ml-notebook"
+  instance_type        = "ml.t2.medium"
+  role_arn             = aws_iam_role.sagemaker_role.arn
+  subnet_id            = aws_subnet.sagemaker_private_subnet.id
+  security_groups      = [aws_security_group.sagemaker_sg.id]
+  direct_internet_access = "Enabled" # Set to Disabled for private subnets
+  lifecycle_config_name = aws_sagemaker_notebook_instance_lifecycle_configuration.example.name
+  custom_image  = aws_sagemaker_image.my_custom_image.image_uri
+  tags = {
+    Name = "ml-notebook"
+    DB_PORT = var.db_port
+    DB_NAME = var.db_name
+    DB_USER = var.db_user
+    DB_PASSWORD = var.db_password
+    BUCKET_NAME = var.bucket_name
+  }
+}
