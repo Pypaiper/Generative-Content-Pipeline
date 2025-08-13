@@ -300,4 +300,5 @@ resource "aws_sagemaker_notebook_instance" "ml_sagemaker_notebook" {
     DB_PASSWORD = var.db_password
     BUCKET_NAME = var.bucket_name
   }
+
 }
