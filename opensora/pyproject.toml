@@ -5,9 +5,12 @@ description = "Module which provides logic to train various models with data in 
 readme = "README.md"
 requires-python = ">=3.10"
 dependencies = [
-  "pytorch==2.4.0",
+  "torch==2.4.0",
+  "xformers",
+  "triton",
+  "diffusers",
   "torchvision==0.19.0",
-  "colossalai",
+  "colossalai>=0.4.4",
   "mmengine>=0.10.3",
   "ftfy>=6.2.0", # for t5
   "accelerate>=0.29.2", # for t5
@@ -35,6 +38,8 @@ dev = ["ipykernel"]
 colossalai = { pip = true }
 liger-kernel = { pip = true }
 opencv-python-headless = { pip = true }
+torch = { pip = true }
+
 
 [tool.uv.sources]
 torch = [
@@ -43,7 +48,12 @@ torch = [
 torchvision = [
   { index = "pytorch-cu121"}
 ]
-tensornvme = { path = "../../../../TensorNVMe" }
+xformers = [
+  { index = "pytorch-cu121"}
+]
+colossalai = [
+  { index = "pytorch-cu121"}
+]
 
 [[tool.uv.index]]
 name = "pytorch-cu121"

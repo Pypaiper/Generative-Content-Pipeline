@@ -179,6 +179,14 @@ resource "aws_iam_policy" "sagemaker_s3_policy" {
           "s3:GetObject",
           "s3:PutObject",
           "s3:ListBucket",
+          "ecr-public:*",
+          "sts:GetServiceBearerToken",
+          "ecr:GetAuthorizationToken",
+          "ecr:BatchCheckLayerAvailability",
+          "ecr:InitiateLayerUpload",
+          "ecr:UploadLayerPart",
+          "ecr:CompleteLayerUpload",
+          "ecr:PutImage",
         ]
         Effect   = "Allow"
         Resource = [
@@ -246,3 +254,12 @@ output "sagemaker_notebook_url" {
 
 
 
+resource "aws_ecr_repository" "pypaiper_repository" {
+  name = "pypaiper-repo"
+
+  # Optional: Add image scanning configuration
+  image_scanning_configuration {
+    scan_on_push = true
+  }
+
+}
