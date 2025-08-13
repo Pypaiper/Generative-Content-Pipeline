@@ -281,24 +281,35 @@ resource "aws_sagemaker_image" "my_custom_image" {
     image_uri  = "${aws_ecr_repository.pypaiper_repository.repository_url}:latest" # Replace with your ECR URI
 }
 
-
-resource "aws_sagemaker_notebook_instance" "ml_sagemaker_notebook" {
-
-  name        = "ml-notebook"
-  instance_type        = "ml.t2.medium"
-  role_arn             = aws_iam_role.sagemaker_role.arn
-  subnet_id            = aws_subnet.sagemaker_private_subnet.id
-  security_groups      = [aws_security_group.sagemaker_sg.id]
-  direct_internet_access = "Enabled" # Set to Disabled for private subnets
-  lifecycle_config_name = aws_sagemaker_notebook_instance_lifecycle_configuration.example.name
-  custom_image  = aws_sagemaker_image.my_custom_image.image_uri
-  tags = {
-    Name = "ml-notebook"
-    DB_PORT = var.db_port
-    DB_NAME = var.db_name
-    DB_USER = var.db_user
-    DB_PASSWORD = var.db_password
-    BUCKET_NAME = var.bucket_name
+resource "aws_sagemaker_app_image_config" "my_custom_image_config" {
+  app_image_config_name = "my-custom-image-config"
+  kernel_gateway_image_config {
+    file_system_config {
+      default_user_gid = 1000
+      default_user_uid = 1000
+    }
+    kernel_specs {
+      display_name = "Python 3 (Custom)"
+      name         = "python3"
+    }
   }
+}
+resource "aws_sagemaker_domain" "my_domain" {
+  domain_name = "my-sagemaker-domain"
+  auth_mode   = "IAM"
+  vpc_id      = aws_vpc.main.id
+  subnet_ids  = [aws_subnet.private.id]
 
+  default_user_settings {
+    execution_role = aws_iam_role.sagemaker_role.arn
+
+    kernel_gateway_app_settings {
+      custom_image {
+        app_image_config_name = aws_sagemaker_app_image_config.my_custom_image_config.app_image_config_name
+        image_name            = aws_sagemaker_image.my_custom_image.image_name
+        # image_version_number is optional, defaults to 0, which might not work. Consider setting it to 1 or higher if issues arise.
+        image_version_number = 1
+      }
+    }
+  }
 }
